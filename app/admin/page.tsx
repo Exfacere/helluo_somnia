@@ -62,11 +62,31 @@ export default function AdminPage() {
         setLoading(false);
     }
 
-    function handleLogin(e: FormEvent) {
+    const [loginLoading, setLoginLoading] = useState(false);
+    const [loginError, setLoginError] = useState('');
+
+    async function handleLogin(e: FormEvent) {
         e.preventDefault();
-        // Store password for API calls
-        sessionStorage.setItem('adminToken', password);
-        setIsAuthenticated(true);
+        setLoginLoading(true);
+        setLoginError('');
+
+        try {
+            const res = await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password }),
+            });
+
+            if (res.ok) {
+                sessionStorage.setItem('adminToken', password);
+                setIsAuthenticated(true);
+            } else {
+                setLoginError('Mot de passe incorrect');
+            }
+        } catch (err) {
+            setLoginError('Erreur de connexion');
+        }
+        setLoginLoading(false);
     }
 
     function getToken() {
@@ -174,6 +194,18 @@ export default function AdminPage() {
                 <div style={styles.loginBox}>
                     <h1 style={styles.loginTitle}>HELLUO_SOMNIA</h1>
                     <p style={styles.loginSubtitle}>Administration</p>
+                    {loginError && (
+                        <div style={{
+                            background: '#F8D7DA',
+                            color: '#721C24',
+                            padding: '0.75rem',
+                            borderRadius: '4px',
+                            marginBottom: '1rem',
+                            fontSize: '0.875rem'
+                        }}>
+                            {loginError}
+                        </div>
+                    )}
                     <form onSubmit={handleLogin} style={styles.loginForm}>
                         <input
                             type="password"
@@ -182,9 +214,17 @@ export default function AdminPage() {
                             placeholder="Mot de passe"
                             style={styles.loginInput}
                             autoFocus
+                            disabled={loginLoading}
                         />
-                        <button type="submit" style={styles.loginButton}>
-                            Accéder
+                        <button
+                            type="submit"
+                            style={{
+                                ...styles.loginButton,
+                                opacity: loginLoading ? 0.7 : 1,
+                            }}
+                            disabled={loginLoading}
+                        >
+                            {loginLoading ? 'Connexion...' : 'Accéder'}
                         </button>
                     </form>
                 </div>
