@@ -25,11 +25,14 @@ function getImageUrl(file: string): string {
     return `/Images/${file}`;
 }
 
+const ITEMS_PER_PAGE = 15;
+
 export default function PortfolioGallery() {
     const [items, setItems] = useState<PortfolioItem[]>([]);
     const [filter, setFilter] = useState('all');
     const [loading, setLoading] = useState(true);
     const [modalImage, setModalImage] = useState<PortfolioItem | null>(null);
+    const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
 
     useEffect(() => {
         loadPortfolio();
@@ -53,19 +56,47 @@ export default function PortfolioGallery() {
         setLoading(false);
     }
 
+    // Reset visible count when filter changes
+    useEffect(() => {
+        setVisibleCount(ITEMS_PER_PAGE);
+    }, [filter]);
+
     const filteredItems = filter === 'all'
         ? items
         : items.filter(item => item.category === filter);
 
+    const visibleItems = filteredItems.slice(0, visibleCount);
+    const hasMore = visibleCount < filteredItems.length;
+
+    function handleShowMore() {
+        setVisibleCount(prev => prev + ITEMS_PER_PAGE);
+    }
+
     return (
-        <>
+        <div>
             {/* Filters */}
-            <nav className="portfolio-filters">
+            <nav className="portfolio-filters" style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
+                justifyContent: 'center',
+                marginBottom: '2rem'
+            }}>
                 {Object.entries(categoryNames).map(([key, name]) => (
                     <button
                         key={key}
                         className={`portfolio-filter ${filter === key ? 'active' : ''}`}
                         onClick={() => setFilter(key)}
+                        style={{
+                            padding: '0.5rem 1.25rem',
+                            border: filter === key ? '1px solid #C9A962' : '1px solid #333',
+                            borderRadius: '999px',
+                            background: filter === key ? '#C9A962' : 'transparent',
+                            color: filter === key ? '#1A1A1A' : '#fff',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                            transition: 'all 0.3s ease',
+                        }}
                     >
                         {name}
                     </button>
@@ -73,35 +104,98 @@ export default function PortfolioGallery() {
             </nav>
 
             {/* Grid */}
-            <div className="portfolio-grid" id="portfolio-grid">
+            <div className="portfolio-grid" id="portfolio-grid" style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: '1.5rem',
+            }}>
                 {loading ? (
-                    <p style={{ textAlign: 'center', padding: '2rem' }}>Chargement...</p>
-                ) : filteredItems.length === 0 ? (
-                    <p style={{ textAlign: 'center', padding: '2rem' }}>Aucune œuvre dans cette catégorie</p>
+                    <p style={{ textAlign: 'center', padding: '2rem', gridColumn: '1 / -1' }}>Chargement...</p>
+                ) : visibleItems.length === 0 ? (
+                    <p style={{ textAlign: 'center', padding: '2rem', gridColumn: '1 / -1' }}>Aucune œuvre dans cette catégorie</p>
                 ) : (
-                    filteredItems.map((item, i) => (
+                    visibleItems.map((item, i) => (
                         <article
                             key={item.id || i}
                             className="portfolio-item"
                             data-category={item.category}
                             onClick={() => setModalImage(item)}
-                            style={{ cursor: 'pointer' }}
+                            style={{
+                                cursor: 'pointer',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                borderRadius: '8px',
+                                aspectRatio: '1',
+                            }}
                         >
                             <img
                                 src={getImageUrl(item.file)}
                                 alt={item.title}
                                 loading="lazy"
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                }}
                             />
-                            <div className="portfolio-item-overlay">
-                                <span className="portfolio-item-category">
+                            <div className="portfolio-item-overlay" style={{
+                                position: 'absolute',
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                padding: '1.5rem 1rem 1rem',
+                                background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)',
+                            }}>
+                                <span style={{
+                                    color: '#C9A962',
+                                    fontSize: '0.75rem',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em'
+                                }}>
                                     {categoryNames[item.category] || item.category}
                                 </span>
-                                <h3 className="portfolio-item-title">{item.title}</h3>
+                                <h3 style={{
+                                    color: '#fff',
+                                    fontSize: '1rem',
+                                    fontWeight: 500,
+                                    marginTop: '0.25rem'
+                                }}>{item.title}</h3>
                             </div>
                         </article>
                     ))
                 )}
             </div>
+
+            {/* Show More Button */}
+            {hasMore && (
+                <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
+                    <button
+                        onClick={handleShowMore}
+                        style={{
+                            padding: '0.875rem 2.5rem',
+                            background: 'transparent',
+                            border: '1px solid #C9A962',
+                            color: '#C9A962',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                            letterSpacing: '0.05em',
+                            transition: 'all 0.3s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#C9A962';
+                            e.currentTarget.style.color = '#1A1A1A';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = '#C9A962';
+                        }}
+                    >
+                        Voir plus ({filteredItems.length - visibleCount} restantes)
+                    </button>
+                </div>
+            )}
 
             {/* Modal */}
             {modalImage && (
@@ -120,7 +214,6 @@ export default function PortfolioGallery() {
                         justifyContent: 'center',
                         zIndex: 9999,
                         cursor: 'zoom-out',
-                        animation: 'fadeIn 0.3s ease',
                     }}
                 >
                     <button
@@ -184,13 +277,6 @@ export default function PortfolioGallery() {
                     </div>
                 </div>
             )}
-
-            <style jsx global>{`
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-            `}</style>
-        </>
+        </div>
     );
 }
