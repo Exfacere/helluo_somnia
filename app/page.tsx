@@ -52,7 +52,7 @@ export default async function HomePage() {
                 <header id="hero" className="hero">
                     <div className="hero-bg">
                         <img
-                            src={items[0]?.file || '/Images/Collage1.webp'}
+                            src="https://res.cloudinary.com/duxandnre/image/upload/v1769433418/helluo-somnia/pyro3-hero.webp"
                             alt="Œuvre de Helluo_Somnia"
                             width={1920}
                             height={1080}
@@ -83,7 +83,7 @@ export default async function HomePage() {
                 <section id="about" className="about section-alt">
                     <div className="container">
                         <div className="about-image reveal">
-                            <img src="/Images/MePicAbout.webp" alt="Portrait de Helluo_Somnia" width={600} height={800} />
+                            <img src="https://res.cloudinary.com/duxandnre/image/upload/v1769433419/helluo-somnia/about-profile.webp" alt="Portrait de Helluo_Somnia" width={600} height={800} />
                         </div>
                         <div className="about-content">
                             <h2 className="section-title reveal">À propos</h2>
