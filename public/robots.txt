@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://missburton.com/sitemap.xml
+
+# Disallow development files
+Disallow: /vendor/
+Disallow: /*.json$

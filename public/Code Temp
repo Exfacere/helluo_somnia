@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Galerie — Ligne horizontale (auto‑scroll + filtres)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css?family=Space+Mono');
+    :root{ --bg:#000; }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:#ddd;font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
+
+    /* ===== Header with filters (same spirit as earlier) ===== */
+    .gal-header{display:flex;align-items:flex-end;justify-content:space-between;gap:2rem;padding:4vh 6vw 0;}
+    .gal-title{margin:0;font-family:"Cinzel",ui-serif,Georgia,serif;font-size:clamp(1.8rem,4vw,2.6rem);color:#E6E6E6;letter-spacing:.06em;position:relative}
+    .gal-title::after{content:"";position:absolute;left:0;right:-10%;bottom:-10px;height:1px;background:linear-gradient(90deg, rgba(208,168,91,.7), rgba(134,168,255,.7));opacity:.35}
+    .gal-filters{display:flex;gap:.6rem;flex-wrap:wrap}
+    .gal-filter{appearance:none;border:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.3));color:#d9dbe6;padding:.5rem .8rem;border-radius:999px;letter-spacing:.06em;font-size:.85rem;cursor:pointer;transition:filter .25s ease,border-color .25s ease}
+    .gal-filter:hover{filter:brightness(1.15)}
+    .gal-filter.is-active{border-color:rgba(134,168,255,.6);box-shadow:0 0 0 2px rgba(134,168,255,.15) inset}
+
+    /* ===== Horizontal lane ===== */
+    .gallery{height:100vh;display:flex;flex-direction:column}
+    .wrapper{display:flex;align-items:center;overflow-x:auto;overflow-y:hidden;gap:3vw;padding:0 6vw 6vh;height:100%;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+    .wrapper::-webkit-scrollbar{height:8px}
+    .wrapper::-webkit-scrollbar-thumb{background:#222;border-radius:999px}
+
+    /* ===== Cards (animations like provided snippet) ===== */
+    .card{flex:0 0 25vw;padding:2vw;position:relative;border-radius:8px;border:2px solid #000;display:flex;justify-content:space-between;flex-direction:column;box-shadow:4px 4px 0 rgba(0,0,0,.1);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.25));transition:.35s}
+    .card-title{transition:.3s;text-align:center;font-family:'Space Mono',monospace;margin:2vw 0 0;font-size:2.2vw;opacity:0;transform:scale(.7)}
+    .card:last-child::after{content:"";width:6vw;position:absolute;height:100%;right:-6vw;top:0}
+    .card img{max-width:70%;max-height:50vh;opacity:0;margin:auto;display:block;transition:.35s;transform:rotate(6deg) translate(0,40px) scaleY(.6)}
+
+    /* Enter/Exit states */
+    .card.isVisible img{max-width:100%;opacity:1;transform:none}
+    .card.isVisible .card-title{opacity:1;transform:none;transition-delay:.1s}
+    .card.notVisible img{opacity:.0;transform:rotate(-6deg) translate(0,40px) scaleY(.6)}
+    .card.notVisible .card-title{opacity:0;transform:scale(.7)}
+
+    /* Optional hover micro-lift */
+    .card:hover{transform:translateY(-4px) scale(1.01)}
+
+    /* Small screens */
+    @media(max-width:800px){.card{flex-basis:70vw}.card-title{font-size:6vw}}
+  </style>
+</head>
+<body>
+  <section class="gallery" id="gallery">
+    <header class="gal-header">
+      <h2 class="gal-title">Galerie</h2>
+      <nav class="gal-filters" role="tablist" aria-label="Catégories d’œuvres">
+        <button class="gal-filter is-active" data-filter="all" role="tab" aria-selected="true">Toutes</button>
+        <button class="gal-filter" data-filter="pyro" role="tab">Pyrogravures</button>
+        <button class="gal-filter" data-filter="huile" role="tab">Peintures à l'huile</button>
+        <button class="gal-filter" data-filter="suture" role="tab">Carnets Suturés</button>
+        <button class="gal-filter" data-filter="cicatrice" role="tab">Carnets Cicatrisées</button>
+      </nav>
+    </header>
+
+    <div class="wrapper" id="wrapper">
+      <!-- Pyrogravures -->
+      <div class="card" data-cat="pyro"><img src="[IMG_PYRO_01]" alt="Pyrogravure I" /><h2 class="card-title">Pyrogravure I</h2></div>
+      <div class="card" data-cat="pyro"><img src="[IMG_PYRO_02]" alt="Pyrogravure II" /><h2 class="card-title">Pyrogravure II</h2></div>
+      <div class="card" data-cat="pyro"><img src="[IMG_PYRO_03]" alt="Pyrogravure III" /><h2 class="card-title">Pyrogravure III</h2></div>
+      <div class="card" data-cat="pyro"><img src="[IMG_PYRO_04]" alt="Pyrogravure IV" /><h2 class="card-title">Pyrogravure IV</h2></div>
+
+      <!-- Peintures à l'huile -->
+      <div class="card" data-cat="huile"><img src="[IMG_HUILE_01]" alt="Huile I" /><h2 class="card-title">Huile I</h2></div>
+      <div class="card" data-cat="huile"><img src="[IMG_HUILE_02]" alt="Huile II" /><h2 class="card-title">Huile II</h2></div>
+      <div class="card" data-cat="huile"><img src="[IMG_HUILE_03]" alt="Huile III" /><h2 class="card-title">Huile III</h2></div>
+      <div class="card" data-cat="huile"><img src="[IMG_HUILE_04]" alt="Huile IV" /><h2 class="card-title">Huile IV</h2></div>
+
+      <!-- Carnets Suturés -->
+      <div class="card" data-cat="suture"><img src="[IMG_SUTURE_01]" alt="Suturé I" /><h2 class="card-title">Suturé I</h2></div>
+      <div class="card" data-cat="suture"><img src="[IMG_SUTURE_02]" alt="Suturé II" /><h2 class="card-title">Suturé II</h2></div>
+      <div class="card" data-cat="suture"><img src="[IMG_SUTURE_03]" alt="Suturé III" /><h2 class="card-title">Suturé III</h2></div>
+      <div class="card" data-cat="suture"><img src="[IMG_SUTURE_04]" alt="Suturé IV" /><h2 class="card-title">Suturé IV</h2></div>
+
+      <!-- Carnets Cicatrisées -->
+      <div class="card" data-cat="cicatrice"><img src="[IMG_CICATRICE_01]" alt="Cicatrisé I" /><h2 class="card-title">Cicatrisé I</h2></div>
+      <div class="card" data-cat="cicatrice"><img src="[IMG_CICATRICE_02]" alt="Cicatrisé II" /><h2 class="card-title">Cicatrisé II</h2></div>
+      <div class="card" data-cat="cicatrice"><img src="[IMG_CICATRICE_03]" alt="Cicatrisé III" /><h2 class="card-title">Cicatrisé III</h2></div>
+      <div class="card" data-cat="cicatrice"><img src="[IMG_CICATRICE_04]" alt="Cicatrisé IV" /><h2 class="card-title">Cicatrisé IV</h2></div>
+    </div>
+  </section>
+
+  <script>
+    // ===== IntersectionObserver for enter/exit animations =====
+    const cards = document.querySelectorAll('.card');
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){
+          e.target.classList.add('isVisible');
+          e.target.classList.remove('notVisible');
+        } else {
+          e.target.classList.remove('isVisible');
+          e.target.classList.add('notVisible');
+        }
+      })
+    }, {root:document.querySelector('#wrapper'), threshold:0.6});
+    cards.forEach(c=> io.observe(c));
+
+    // ===== Filters =====
+    const wrapper = document.getElementById('wrapper');
+    const filters = document.querySelectorAll('.gal-filter');
+    function applyFilter(val){
+      cards.forEach(c=>{
+        const show = (val==='all') || c.dataset.cat===val;
+        c.style.display = show ? '' : 'none';
+      });
+      // reset scroll to start
+      wrapper.scrollTo({left:0, behavior:'smooth'});
+    }
+    filters.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        filters.forEach(b=> b.classList.remove('is-active'));
+        btn.classList.add('is-active');
+        applyFilter(btn.dataset.filter);
+      });
+    });
+
+    // ===== Gentle auto-scroll (stops on first user interaction) =====
+    let autoScrollActive = true;
+    let lastTs = 0;
+    const pxPerFrame = 0.4; // slow speed
+
+    function rafScroll(ts){
+      if(!autoScrollActive) return;
+      if(!lastTs) lastTs = ts;
+      const dt = ts - lastTs; lastTs = ts;
+      wrapper.scrollLeft += pxPerFrame * (dt/16.67);
+      if(wrapper.scrollLeft + wrapper.clientWidth >= wrapper.scrollWidth - 1){
+        autoScrollActive = false;
+      } else {
+        requestAnimationFrame(rafScroll);
+      }
+    }
+
+    function stopAuto(){ if(autoScrollActive){ autoScrollActive=false; } }
+    ['wheel','touchstart','mousedown','keydown'].forEach(evt=>{
+      wrapper.addEventListener(evt, stopAuto, {passive:true});
+      window.addEventListener(evt, stopAuto, {passive:true});
+    });
+
+    requestAnimationFrame(rafScroll);
+  </script>
+</body>
+</html>

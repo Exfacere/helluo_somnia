@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Helluo_Somnia — Artiste Contemporaine</title>
+  <meta name="description"
+    content="Portfolio de Helluo_Somnia, artiste contemporaine. Pyrogravures, peintures, collages et gravures. Agenda des expositions et contact." />
+  <meta name="theme-color" content="#FAFAF8" />
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://missburton.com/" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://helluosomnia.com/" />
+  <meta property="og:title" content="Helluo_Somnia — Artiste Contemporaine" />
+  <meta property="og:description"
+    content="Portfolio de Helluo_Somnia, artiste contemporaine. Pyrogravures, peintures, collages et gravures." />
+  <meta property="og:image" content="https://helluosomnia.com/Images/Collage1.webp" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta property="og:site_name" content="Helluo_Somnia" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://helluosomnia.com/" />
+  <meta name="twitter:title" content="Helluo_Somnia — Artiste Contemporaine" />
+  <meta name="twitter:description"
+    content="Portfolio de Helluo_Somnia, artiste contemporaine. Pyrogravures, peintures, collages et gravures." />
+  <meta name="twitter:image" content="https://helluosomnia.com/Images/Collage1.webp" />
+
+  <!-- JSON-LD Schema.org -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Helluo_Somnia",
+    "url": "https://helluosomnia.com",
+    "image": "https://helluosomnia.com/Images/MePicAbout.webp",
+    "description": "Artiste contemporaine spécialisée dans les pyrogravures, peintures, collages et gravures.",
+    "jobTitle": "Artiste Contemporaine",
+    "sameAs": ["https://www.instagram.com/helluo_somnia/"],
+    "knowsAbout": ["Pyrogravure", "Peinture", "Collage", "Gravure", "Art contemporain"]
+  }
+  </script>
+
+  <!-- Preload critical fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap"
+    as="style">
+
+  <!-- Preload hero image -->
+  <!-- SEO: Robots meta -->
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/webp" href="Images/ProfilePic.webp" />
+  <link rel="apple-touch-icon" href="Images/ProfilePic.webp" />
+
+  <!-- Preload hero image -->
+  <link rel="preload" href="Images/Collage1.webp" as="image">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css?v=redesign-1" />
+  <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css" />
+</head>
+
+<body>
+  <!-- Preloader -->
+  <div id="preloader" aria-label="Chargement">
+    <div class="preloader-content">
+      <h1 class="preloader-name" id="preloader-name"></h1>
+      <div class="preloader-line"></div>
+    </div>
+  </div>
+
+  <!-- Custom Cursor -->
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-follower" id="cursor-follower"></div>
+
+  <!-- Skip Link -->
+  <a href="#main-content" class="skip-link">Aller au contenu</a>
+
+  <!-- Navigation -->
+  <nav class="navbar" role="navigation" aria-label="Navigation principale">
+    <a href="#hero" class="logo">Helluo_Somnia</a>
+    <button class="menu-toggle" aria-label="Menu" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <ul>
+      <li><a href="#about">À propos</a></li>
+      <li><a href="#portfolio">Portfolio</a></li>
+      <li><a href="#exhibitions">Expositions</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <main id="main-content">
+    <!-- Hero Section -->
+    <header id="hero" class="hero" aria-label="Section d'introduction">
+      <div class="hero-bg">
+        <img src="Images/Collage1.webp" alt="Œuvre de collage artistique par Helluo_Somnia" aria-hidden="true"
+          loading="eager" width="1920" height="1080">
+      </div>
+      <div class="hero-content">
+        <h1 class="hero-title" id="hero-title"></h1>
+        <p class="hero-subtitle">— Artiste Contemporaine —</p>
+      </div>
+      <div class="hero-scroll" aria-hidden="true">
+        <span>Défiler</span>
+      </div>
+    </header>
+
+    <!-- Works Banner - Scrolling showcase -->
+    <section class="works-banner" aria-label="Aperçu des œuvres">
+      <div class="works-track" id="works-track">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about section-alt" role="region" aria-labelledby="about-heading">
+      <div class="container">
+        <div class="about-image reveal">
+          <img src="Images/MePicAbout.webp" alt="Portrait de Helluo_Somnia, artiste contemporaine" loading="lazy"
+            width="600" height="800">
+        </div>
+        <div class="about-content">
+          <h2 id="about-heading" class="section-title reveal">À propos</h2>
+          <p class="reveal reveal-delay-1">Je crée des images qui respirent l'ombre et la lumière. Mon travail explore
+            les frontières entre le réel et l'imaginaire — silhouettes, matière, silence. Chaque pièce cherche le point
+            d'équilibre où la douceur frôle l'inquiétude.</p>
+          <p class="reveal reveal-delay-2">Formée en <strong>arts visuels</strong> et en <strong>direction
+              artistique</strong>, je combine procédés analogiques et outils numériques : encres, photo, textures
+            scannées, algorithmes de transformation. J'aime laisser des traces — des défauts — qui rappellent la main.
+          </p>
+          <p class="reveal reveal-delay-3">Mes références s'hybrident : renaissance italienne, cinéma expressionniste,
+            musiques atmosphériques, architectures brutalistes. J'assemble ces influences pour raconter des récits
+            sobres, éclairés comme par une lampe à huile dans une pièce noire.</p>
+          <a href="#contact" class="btn reveal reveal-delay-4">Me contacter</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Portfolio Section -->
+    <section id="portfolio" class="portfolio" role="region" aria-label="Galerie de travaux">
+      <div class="container">
+        <header class="section-header">
+          <h2 class="section-title reveal">Portfolio</h2>
+          <nav class="portfolio-filters reveal" role="tablist" aria-label="Filtrer par catégorie">
+            <button class="portfolio-filter active" data-filter="all" role="tab" aria-selected="true">Toutes</button>
+            <button class="portfolio-filter" data-filter="pyro" role="tab">Pyrogravures</button>
+            <button class="portfolio-filter" data-filter="peinture" role="tab">Peintures</button>
+            <button class="portfolio-filter" data-filter="collage" role="tab">Collages</button>
+            <button class="portfolio-filter" data-filter="gravure" role="tab">Gravures</button>
+          </nav>
+        </header>
+        <div class="portfolio-grid" id="portfolio-grid" aria-live="polite">
+          <!-- Items populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Exhibitions Section -->
+    <section id="exhibitions" class="exhibitions section-alt" role="region" aria-label="Expositions">
+      <div class="container">
+        <header class="section-header">
+          <h2 class="section-title reveal">Expositions</h2>
+        </header>
+        <div class="timeline" id="exhibition-timeline">
+          <!-- Items populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact" role="region" aria-label="Formulaire de contact">
+      <div class="container">
+        <h2 class="section-title reveal">Contact</h2>
+        <p class="reveal reveal-delay-1">Pour toute demande de collaboration, commande ou presse, n'hésitez pas à me
+          contacter.</p>
+
+        <form class="contact-form reveal reveal-delay-2" name="contact" method="POST" data-netlify="true"
+          netlify-honeypot="bot-field">
+          <!-- Honeypot field for spam protection -->
+          <p class="hidden-field" style="display:none;">
+            <label>Ne pas remplir si vous êtes humain: <input name="bot-field" /></label>
+          </p>
+          <input type="hidden" name="form-name" value="contact" />
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="name">Nom complet</label>
+              <input type="text" id="name" name="name" placeholder="Votre nom" required autocomplete="name">
+            </div>
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" id="email" name="email" placeholder="votre@email.com" required autocomplete="email">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="subject">Sujet</label>
+            <input type="text" id="subject" name="subject" placeholder="L'objet de votre message">
+          </div>
+          <div class="form-group">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" placeholder="Décrivez votre projet ou demande..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            <span class="btn-text">Envoyer le message</span>
+            <span class="btn-loading" style="display:none;">
+              <span class="spinner"></span> Envoi...
+            </span>
+          </button>
+        </form>
+
+        <div class="social-links reveal reveal-delay-3">
+          <a href="https://www.instagram.com/helluo_somnia/" target="_blank" rel="noopener noreferrer"
+            class="social-link" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Confirmation Modal -->
+  <div class="modal" id="confirmationModal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      </div>
+      <h3 id="modal-title" class="modal-title">Message envoyé !</h3>
+      <p class="modal-text">Merci pour votre message. Je vous répondrai dans les plus brefs délais.</p>
+      <button class="btn btn-primary modal-close" aria-label="Fermer">Parfait</button>
+    </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Visualisation de l'œuvre">
+    <button class="lightbox-close" aria-label="Fermer">&times;</button>
+    <button class="lightbox-nav lightbox-prev" aria-label="Image précédente">&#8249;</button>
+    <button class="lightbox-nav lightbox-next" aria-label="Image suivante">&#8250;</button>
+    <div class="lightbox-content">
+      <img src="" alt="" id="lightbox-img">
+      <div class="lightbox-caption">
+        <h3 id="lightbox-title"></h3>
+        <span id="lightbox-category"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <p>&copy; 2025 Helluo_Somnia — Tous droits réservés</p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script defer src="/vendor/gsap/gsap.min.js"></script>
+  <script defer src="/vendor/gsap/ScrollTrigger.min.js"></script>
+  <script defer src="/vendor/lenis/lenis.min.js"></script>
+  <script defer src="script.js?v=redesign-1"></script>
+</body>
+
+</html>

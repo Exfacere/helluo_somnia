@@ -1,0 +1,28 @@
+/* Dark subtle background gradient and utility classes */
+:root {
+  --bg-start: #0b0f14;
+  --bg-end: #0a0a0a;
+  --text-primary: #e5e7eb; /* gray-200 */
+  --text-secondary: #9ca3af; /* gray-400 */
+  --accent: #f97316; /* orange-500 */
+}
+
+.bg-label-dark {
+  background: radial-gradient(1200px 600px at 80% -10%, rgba(249, 115, 22, 0.08), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(56, 189, 248, 0.06), transparent 60%),
+    linear-gradient(180deg, var(--bg-start), var(--bg-end));
+}
+
+.glow-orange {
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.15), 0 10px 30px rgba(249, 115, 22, 0.25);
+}
+
+.card-surface {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+  backdrop-filter: saturate(120%) blur(6px);
+}
+
+.ring-focus:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.6);
+}

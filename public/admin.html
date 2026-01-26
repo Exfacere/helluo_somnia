@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin — Helluo_Somnia</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #FAFAF8;
+            --bg-alt: #F5F5F3;
+            --text: #1A1A1A;
+            --text-muted: #6B6B6B;
+            --accent: #C9A962;
+            --accent-hover: #B8953F;
+            --border: #E5E5E3;
+            --danger: #DC3545;
+            --danger-hover: #C82333;
+            --success: #28A745;
+            --radius: 8px;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .admin-header {
+            background: var(--text);
+            color: var(--bg);
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .admin-header h1 {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.5rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+        }
+
+        .admin-header a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+        }
+
+        .admin-header a:hover {
+            color: var(--accent-hover);
+        }
+
+        /* Layout */
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .admin-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Works List */
+        .works-count {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            background: var(--bg-alt);
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+        }
+
+        .works-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1rem;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .work-item {
+            position: relative;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--bg-alt);
+            aspect-ratio: 1;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .work-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        .work-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .work-item-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent 60%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 0.75rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .work-item:hover .work-item-overlay {
+            opacity: 1;
+        }
+
+        .work-item-title {
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .work-item-category {
+            color: var(--accent);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .work-item-actions {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            display: flex;
+            gap: 0.25rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .work-item:hover .work-item-actions {
+            opacity: 1;
+        }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-icon:active {
+            transform: scale(0.95);
+        }
+
+        .btn-delete {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: var(--danger-hover);
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 0.875rem;
+            font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.15);
+        }
+
+        .form-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            gap: 0.5rem;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: var(--text);
+            color: white;
+            width: 100%;
+            margin-top: 0.75rem;
+        }
+
+        .btn-secondary:hover {
+            background: #333;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 1rem;
+            border-radius: var(--radius);
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .alert-success {
+            background: #D4EDDA;
+            color: #155724;
+        }
+
+        .alert-error {
+            background: #F8D7DA;
+            color: #721C24;
+        }
+
+        .alert-info {
+            background: #CCE5FF;
+            color: #004085;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .loading::before {
+            content: '';
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Filter tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .filter-tab {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: transparent;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-tab:hover {
+            border-color: var(--accent);
+        }
+
+        .filter-tab.active {
+            background: var(--text);
+            color: white;
+            border-color: var(--text);
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: var(--radius);
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal-content h3 {
+            margin-bottom: 1rem;
+        }
+
+        .modal-content p {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+        }
+
+        .btn-cancel {
+            background: var(--bg-alt);
+            color: var(--text);
+        }
+
+        .btn-cancel:hover {
+            background: var(--border);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger-hover);
+        }
+    </style>
+</head>
+
+<body>
+    <header class="admin-header">
+        <h1>HELLUO_SOMNIA — Admin</h1>
+        <a href="accueil.html">← Retour au site</a>
+    </header>
+
+    <div class="admin-container">
+        <!-- Works List -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Œuvres</h2>
+                <span class="works-count" id="works-count">0 œuvres</span>
+            </div>
+            <div class="card-body">
+                <div class="filter-tabs" id="filter-tabs">
+                    <button class="filter-tab active" data-filter="all">Toutes</button>
+                    <button class="filter-tab" data-filter="pyro">Pyrogravures</button>
+                    <button class="filter-tab" data-filter="peinture">Peintures</button>
+                    <button class="filter-tab" data-filter="collage">Collages</button>
+                    <button class="filter-tab" data-filter="gravure">Gravures</button>
+                    <button class="filter-tab" data-filter="divers">Divers</button>
+                </div>
+                <div class="works-grid" id="works-grid">
+                    <div class="loading">Chargement...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Form -->
+        <div>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Ajouter une œuvre</h2>
+                </div>
+                <div class="card-body">
+                    <div id="form-alert"></div>
+                    <form id="add-form">
+                        <div class="form-group">
+                            <label for="file">Nom du fichier image</label>
+                            <input type="text" id="file" name="file" placeholder="MonOeuvre.webp" required>
+                            <p class="form-hint">Le fichier doit être dans le dossier Images/</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="title">Titre</label>
+                            <input type="text" id="title" name="title" placeholder="Titre de l'œuvre" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="category">Catégorie</label>
+                            <select id="category" name="category" required>
+                                <option value="">Choisir une catégorie</option>
+                                <option value="pyro">Pyrogravure</option>
+                                <option value="peinture">Peinture</option>
+                                <option value="collage">Collage</option>
+                                <option value="gravure">Gravure</option>
+                                <option value="divers">Divers</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">+ Ajouter l'œuvre</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+                <div class="card-header">
+                    <h2>Exporter</h2>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        Après modifications, téléchargez le fichier JSON et remplacez l'ancien
+                        <code>portfolio.json</code> dans votre dossier.
+                    </div>
+                    <button class="btn btn-secondary" id="export-btn">📥 Télécharger portfolio.json</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" id="delete-modal">
+        <div class="modal-content">
+            <h3>Supprimer cette œuvre ?</h3>
+            <p id="delete-modal-text">Êtes-vous sûr de vouloir supprimer cette œuvre ?</p>
+            <div class="modal-actions">
+                <button class="btn btn-cancel" id="cancel-delete">Annuler</button>
+                <button class="btn btn-danger" id="confirm-delete">Supprimer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Portfolio data
+        let portfolioData = { items: [] };
+        let currentFilter = 'all';
+        let deleteIndex = null;
+
+        // Category names
+        const categoryNames = {
+            pyro: 'Pyrogravure',
+            peinture: 'Peinture',
+            collage: 'Collage',
+            gravure: 'Gravure',
+            divers: 'Divers'
+        };
+
+        // DOM Elements
+        const worksGrid = document.getElementById('works-grid');
+        const worksCount = document.getElementById('works-count');
+        const addForm = document.getElementById('add-form');
+        const formAlert = document.getElementById('form-alert');
+        const exportBtn = document.getElementById('export-btn');
+        const filterTabs = document.getElementById('filter-tabs');
+        const deleteModal = document.getElementById('delete-modal');
+        const deleteModalText = document.getElementById('delete-modal-text');
+        const cancelDelete = document.getElementById('cancel-delete');
+        const confirmDelete = document.getElementById('confirm-delete');
+
+        // Load portfolio data
+        async function loadPortfolio() {
+            try {
+                const response = await fetch('portfolio.json?t=' + Date.now());
+                if (!response.ok) throw new Error('Failed to load');
+                portfolioData = await response.json();
+                renderWorks();
+            } catch (e) {
+                console.error('Error loading portfolio:', e);
+                worksGrid.innerHTML = '<div class="empty-state">Erreur de chargement. Vérifiez que portfolio.json existe.</div>';
+            }
+        }
+
+        // Render works
+        function renderWorks() {
+            const filtered = currentFilter === 'all'
+                ? portfolioData.items
+                : portfolioData.items.filter(item => item.category === currentFilter);
+
+            if (filtered.length === 0) {
+                worksGrid.innerHTML = '<div class="empty-state">Aucune œuvre dans cette catégorie</div>';
+            } else {
+                worksGrid.innerHTML = filtered.map((item, i) => {
+                    const realIndex = portfolioData.items.indexOf(item);
+                    return `
+            <div class="work-item" data-index="${realIndex}">
+              <img src="Images/${item.file}" alt="${item.title}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23f0f0f0%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2212%22>Image non trouvée</text></svg>'">
+              <div class="work-item-overlay">
+                <span class="work-item-title">${item.title}</span>
+                <span class="work-item-category">${categoryNames[item.category] || item.category}</span>
+              </div>
+              <div class="work-item-actions">
+                <button class="btn-icon btn-delete" onclick="showDeleteModal(${realIndex})" title="Supprimer">×</button>
+              </div>
+            </div>
+          `;
+                }).join('');
+            }
+
+            worksCount.textContent = `${portfolioData.items.length} œuvre${portfolioData.items.length !== 1 ? 's' : ''}`;
+        }
+
+        // Filter tabs
+        filterTabs.addEventListener('click', (e) => {
+            if (e.target.classList.contains('filter-tab')) {
+                filterTabs.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                currentFilter = e.target.dataset.filter;
+                renderWorks();
+            }
+        });
+
+        // Add form
+        addForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const file = document.getElementById('file').value.trim();
+            const title = document.getElementById('title').value.trim();
+            const category = document.getElementById('category').value;
+
+            if (!file || !title || !category) {
+                showFormAlert('Veuillez remplir tous les champs.', 'error');
+                return;
+            }
+
+            // Check for duplicates
+            if (portfolioData.items.some(item => item.file === file)) {
+                showFormAlert('Ce fichier existe déjà dans le portfolio.', 'error');
+                return;
+            }
+
+            portfolioData.items.unshift({ file, title, category });
+            renderWorks();
+            addForm.reset();
+            showFormAlert('Œuvre ajoutée avec succès !', 'success');
+        });
+
+        // Show form alert
+        function showFormAlert(message, type) {
+            formAlert.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => { formAlert.innerHTML = ''; }, 3000);
+        }
+
+        // Delete modal
+        function showDeleteModal(index) {
+            deleteIndex = index;
+            const item = portfolioData.items[index];
+            deleteModalText.textContent = `Êtes-vous sûr de vouloir supprimer "${item.title}" ?`;
+            deleteModal.classList.add('active');
+        }
+
+        cancelDelete.addEventListener('click', () => {
+            deleteModal.classList.remove('active');
+            deleteIndex = null;
+        });
+
+        confirmDelete.addEventListener('click', () => {
+            if (deleteIndex !== null) {
+                portfolioData.items.splice(deleteIndex, 1);
+                renderWorks();
+                deleteModal.classList.remove('active');
+                deleteIndex = null;
+            }
+        });
+
+        // Close modal on backdrop click
+        deleteModal.addEventListener('click', (e) => {
+            if (e.target === deleteModal) {
+                deleteModal.classList.remove('active');
+                deleteIndex = null;
+            }
+        });
+
+        // Export JSON
+        exportBtn.addEventListener('click', () => {
+            const json = JSON.stringify(portfolioData, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'portfolio.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // Initialize
+        loadPortfolio();
+    </script>
+</body>
+
+</html>

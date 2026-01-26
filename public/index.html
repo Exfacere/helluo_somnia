@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Helluo_Somnia — Artiste Contemporaine</title>
+  <meta name="theme-color" content="#FAFAF8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FAFAF8;
+      --text: #1A1A1A;
+      --accent: #C9A962;
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #preloader {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      transition: opacity 0.8s var(--ease-out-expo), visibility 0s linear 0.8s;
+    }
+
+    #preloader.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .preloader-name {
+      font-size: clamp(2.5rem, 8vw, 5rem);
+      font-weight: 400;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .preloader-name .char {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(100%);
+      animation: revealChar 0.6s var(--ease-out-expo) forwards;
+    }
+
+    @keyframes revealChar {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .preloader-line {
+      width: 80px;
+      height: 1px;
+      margin-top: 2rem;
+      background: var(--accent);
+      transform: scaleX(0);
+      animation: expandLine 1s var(--ease-out-expo) 0.8s forwards;
+    }
+
+    @keyframes expandLine {
+      to {
+        transform: scaleX(1);
+      }
+    }
+
+    .preloader-subtitle {
+      margin-top: 1.5rem;
+      font-size: 1rem;
+      font-style: italic;
+      letter-spacing: 0.15em;
+      color: #8A8A8A;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeInUp 0.6s var(--ease-out-expo) 1.2s forwards;
+    }
+
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    main {
+      opacity: 0;
+      transition: opacity 0.8s ease 0.1s;
+      min-height: 100vh;
+    }
+
+    body.ready main {
+      opacity: 1;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .preloader-name .char,
+      .preloader-line,
+      .preloader-subtitle {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="preloader" aria-label="Chargement du site">
+    <h1 class="preloader-name" id="preloaderName"></h1>
+    <div class="preloader-line"></div>
+    <p class="preloader-subtitle">Artiste Contemporaine</p>
+  </div>
+
+  <a href="#main-content" class="skip-link" style="position:absolute;top:-100%;">Aller au contenu</a>
+
+  <main id="main-content">
+    <!-- Content will be loaded via redirect -->
+  </main>
+
+  <script>
+    (function () {
+      const preloader = document.getElementById('preloader');
+      const nameEl = document.getElementById('preloaderName');
+      const text = 'Helluo_Somnia';
+
+      // Create character spans with staggered animation delays
+      text.split('').forEach((char, i) => {
+        const span = document.createElement('span');
+        span.className = 'char';
+        span.textContent = char === ' ' ? '\u00A0' : char;
+        span.style.animationDelay = `${i * 0.06 + 0.3}s`;
+        nameEl.appendChild(span);
+      });
+
+      // Track animation completion
+      const totalChars = text.replace(/ /g, '').length;
+      let animatedChars = 0;
+
+      nameEl.querySelectorAll('.char').forEach(char => {
+        char.addEventListener('animationend', () => {
+          animatedChars++;
+          if (animatedChars >= totalChars - 1) {
+            // All chars animated, wait a bit then transition
+            setTimeout(finishPreloader, 800);
+          }
+        }, { once: true });
+      });
+
+      // Fallback timeout in case animation events don't fire
+      setTimeout(finishPreloader, 3000);
+
+      let finished = false;
+      function finishPreloader() {
+        if (finished) return;
+        finished = true;
+
+        preloader.classList.add('is-hidden');
+        document.body.classList.add('ready');
+        preloader.setAttribute('aria-hidden', 'true');
+
+        try {
+          sessionStorage.setItem('passedPreloader', '1');
+        } catch (e) { }
+
+        // Redirect to main page
+        const params = new URLSearchParams(location.search);
+        const isDev = params.get('dev') === '1';
+        const url = isDev ? 'accueil.html?dev=1' : 'accueil.html';
+
+        setTimeout(() => {
+          try {
+            window.location.replace(url);
+          } catch (e) {
+            window.location.href = url;
+          }
+        }, 400);
+      }
+    })();
+  </script>
+</body>
+
+</html>
