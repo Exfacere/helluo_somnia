@@ -1,36 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { Redis } from '@upstash/redis';
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'portfolio.json');
+// Initialize Redis client
+const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
 
-// Ensure data directory exists
-async function ensureDataDir() {
-    const dataDir = path.dirname(DATA_FILE);
-    try {
-        await fs.access(dataDir);
-    } catch {
-        await fs.mkdir(dataDir, { recursive: true });
-    }
-}
-
-// Read portfolio data
-async function readPortfolio() {
-    try {
-        await ensureDataDir();
-        const data = await fs.readFile(DATA_FILE, 'utf-8');
-        return JSON.parse(data);
-    } catch {
-        // Return default structure if file doesn't exist
-        return { items: [] };
-    }
-}
-
-// Write portfolio data
-async function writePortfolio(data: any) {
-    await ensureDataDir();
-    await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
-}
+const PORTFOLIO_KEY = 'portfolio:items';
 
 // Check authorization
 function isAuthorized(request: NextRequest): boolean {
@@ -41,8 +18,8 @@ function isAuthorized(request: NextRequest): boolean {
 // GET - Retrieve all portfolio items
 export async function GET() {
     try {
-        const data = await readPortfolio();
-        return NextResponse.json(data);
+        const items = await redis.get<any[]>(PORTFOLIO_KEY) || [];
+        return NextResponse.json({ items });
     } catch (error) {
         console.error('Error reading portfolio:', error);
         return NextResponse.json({ error: 'Failed to read portfolio' }, { status: 500 });
@@ -63,7 +40,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const data = await readPortfolio();
+        // Get existing items
+        const items = await redis.get<any[]>(PORTFOLIO_KEY) || [];
 
         const newItem = {
             id: Date.now().toString(),
@@ -74,8 +52,11 @@ export async function POST(request: NextRequest) {
             createdAt: new Date().toISOString(),
         };
 
-        data.items.unshift(newItem);
-        await writePortfolio(data);
+        // Add new item at the beginning
+        items.unshift(newItem);
+
+        // Save back to Redis
+        await redis.set(PORTFOLIO_KEY, items);
 
         return NextResponse.json({ success: true, item: newItem });
     } catch (error) {
@@ -95,27 +76,31 @@ export async function DELETE(request: NextRequest) {
         const id = searchParams.get('id');
         const indexStr = searchParams.get('index');
 
-        const data = await readPortfolio();
+        // Get existing items
+        const items = await redis.get<any[]>(PORTFOLIO_KEY) || [];
 
         if (indexStr !== null) {
             // Delete by index
             const index = parseInt(indexStr, 10);
-            if (isNaN(index) || index < 0 || index >= data.items.length) {
+            if (isNaN(index) || index < 0 || index >= items.length) {
                 return NextResponse.json({ error: 'Invalid index' }, { status: 400 });
             }
-            data.items.splice(index, 1);
+            items.splice(index, 1);
         } else if (id) {
-            // Delete by ID (legacy support)
-            const initialLength = data.items.length;
-            data.items = data.items.filter((item: any) => item.id !== id);
-            if (data.items.length === initialLength) {
+            // Delete by ID
+            const initialLength = items.length;
+            const filtered = items.filter((item: any) => item.id !== id);
+            if (filtered.length === initialLength) {
                 return NextResponse.json({ error: 'Item not found' }, { status: 404 });
             }
+            items.length = 0;
+            items.push(...filtered);
         } else {
             return NextResponse.json({ error: 'Missing item ID or index' }, { status: 400 });
         }
 
-        await writePortfolio(data);
+        // Save back to Redis
+        await redis.set(PORTFOLIO_KEY, items);
 
         return NextResponse.json({ success: true });
     } catch (error) {
