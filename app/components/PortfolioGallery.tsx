@@ -106,8 +106,8 @@ export default function PortfolioGallery() {
             {/* Grid */}
             <div className="portfolio-grid" id="portfolio-grid" style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                gap: '1.5rem',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '1rem',
             }}>
                 {loading ? (
                     <p style={{ textAlign: 'center', padding: '2rem', gridColumn: '1 / -1' }}>Chargement...</p>
