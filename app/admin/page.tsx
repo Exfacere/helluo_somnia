@@ -43,6 +43,10 @@ export default function AdminPage() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
 
+    // Edit state
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const [editingTitle, setEditingTitle] = useState('');
+
     // Load items
     useEffect(() => {
         if (isAuthenticated) {
@@ -183,6 +187,39 @@ export default function AdminPage() {
         }
     }
 
+    function startEditing(index: number, currentTitle: string) {
+        setEditingIndex(index);
+        setEditingTitle(currentTitle);
+    }
+
+    function cancelEditing() {
+        setEditingIndex(null);
+        setEditingTitle('');
+    }
+
+    async function handleSaveEdit(index: number) {
+        try {
+            const res = await fetch('/api/portfolio', {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ index, title: editingTitle }),
+            });
+
+            if (!res.ok) throw new Error('Update failed');
+
+            setSuccess('Titre modifié !');
+            setTimeout(() => setSuccess(''), 3000);
+            setEditingIndex(null);
+            setEditingTitle('');
+            loadItems();
+        } catch (err) {
+            setError('Erreur lors de la modification');
+        }
+    }
+
     const filteredItems = filter === 'all'
         ? items
         : items.filter(item => item.category === filter);
@@ -282,17 +319,81 @@ export default function AdminPage() {
                                             style={styles.itemImage}
                                         />
                                         <div style={styles.itemOverlay}>
-                                            <span style={styles.itemTitle}>{item.title}</span>
-                                            <span style={styles.itemCategory}>
-                                                {categoryNames[item.category] || item.category}
-                                            </span>
+                                            {editingIndex === actualIndex ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                    <input
+                                                        type="text"
+                                                        value={editingTitle}
+                                                        onChange={(e) => setEditingTitle(e.target.value)}
+                                                        style={{
+                                                            padding: '0.25rem 0.5rem',
+                                                            fontSize: '0.75rem',
+                                                            borderRadius: '4px',
+                                                            border: 'none',
+                                                        }}
+                                                        autoFocus
+                                                    />
+                                                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                        <button
+                                                            onClick={() => handleSaveEdit(actualIndex)}
+                                                            style={{
+                                                                padding: '0.25rem 0.5rem',
+                                                                fontSize: '0.65rem',
+                                                                background: '#28a745',
+                                                                color: '#fff',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                cursor: 'pointer',
+                                                            }}
+                                                        >
+                                                            ✓
+                                                        </button>
+                                                        <button
+                                                            onClick={cancelEditing}
+                                                            style={{
+                                                                padding: '0.25rem 0.5rem',
+                                                                fontSize: '0.65rem',
+                                                                background: '#6c757d',
+                                                                color: '#fff',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                cursor: 'pointer',
+                                                            }}
+                                                        >
+                                                            ✗
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <span style={styles.itemTitle}>{item.title}</span>
+                                                    <span style={styles.itemCategory}>
+                                                        {categoryNames[item.category] || item.category}
+                                                    </span>
+                                                </>
+                                            )}
                                         </div>
-                                        <button
-                                            onClick={() => handleDelete(actualIndex)}
-                                            style={styles.deleteBtn}
-                                        >
-                                            ×
-                                        </button>
+                                        {editingIndex !== actualIndex && (
+                                            <>
+                                                <button
+                                                    onClick={() => startEditing(actualIndex, item.title)}
+                                                    style={{
+                                                        ...styles.deleteBtn,
+                                                        background: '#007bff',
+                                                        top: '0.5rem',
+                                                        right: '2.5rem',
+                                                    }}
+                                                >
+                                                    ✎
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(actualIndex)}
+                                                    style={styles.deleteBtn}
+                                                >
+                                                    ×
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 );
                             })

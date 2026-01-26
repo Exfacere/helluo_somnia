@@ -1,27 +1,6 @@
-import { promises as fs } from 'fs';
-import path from 'path';
+import PortfolioGallery from './components/PortfolioGallery';
 
-interface PortfolioItem {
-    id?: string;
-    file: string;
-    title: string;
-    category: string;
-}
-
-async function getPortfolio(): Promise<PortfolioItem[]> {
-    try {
-        const filePath = path.join(process.cwd(), 'data', 'portfolio.json');
-        const data = await fs.readFile(filePath, 'utf-8');
-        const json = JSON.parse(data);
-        return json.items || [];
-    } catch {
-        return [];
-    }
-}
-
-export default async function HomePage() {
-    const items = await getPortfolio();
-
+export default function HomePage() {
     return (
         <>
             {/* Preloader */}
@@ -67,18 +46,6 @@ export default async function HomePage() {
                     </div>
                 </header>
 
-                {/* Works Banner */}
-                <section className="works-banner">
-                    <div className="works-track" id="works-track">
-                        {items.slice(0, 10).map((item, i) => (
-                            <img key={i} src={item.file} alt={item.title} loading="lazy" />
-                        ))}
-                        {items.slice(0, 10).map((item, i) => (
-                            <img key={`dup-${i}`} src={item.file} alt={item.title} loading="lazy" />
-                        ))}
-                    </div>
-                </section>
-
                 {/* About Section */}
                 <section id="about" className="about section-alt">
                     <div className="container">
@@ -100,39 +67,13 @@ export default async function HomePage() {
                     </div>
                 </section>
 
-                {/* Portfolio Section */}
+                {/* Portfolio Section - Dynamic */}
                 <section id="portfolio" className="portfolio">
                     <div className="container">
                         <header className="section-header">
                             <h2 className="section-title reveal">Portfolio</h2>
-                            <nav className="portfolio-filters reveal">
-                                <button className="portfolio-filter active" data-filter="all">Toutes</button>
-                                <button className="portfolio-filter" data-filter="pyro">Pyrogravures</button>
-                                <button className="portfolio-filter" data-filter="peinture">Peintures</button>
-                                <button className="portfolio-filter" data-filter="collage">Collages</button>
-                                <button className="portfolio-filter" data-filter="gravure">Gravures</button>
-                            </nav>
                         </header>
-                        <div className="portfolio-grid" id="portfolio-grid">
-                            {items.map((item, i) => (
-                                <article
-                                    key={item.id || i}
-                                    className="portfolio-item"
-                                    data-category={item.category}
-                                >
-                                    <img src={item.file} alt={item.title} loading="lazy" />
-                                    <div className="portfolio-item-overlay">
-                                        <span className="portfolio-item-category">
-                                            {item.category === 'pyro' ? 'Pyrogravure' :
-                                                item.category === 'peinture' ? 'Peinture' :
-                                                    item.category === 'collage' ? 'Collage' :
-                                                        item.category === 'gravure' ? 'Gravure' : item.category}
-                                        </span>
-                                        <h3 className="portfolio-item-title">{item.title}</h3>
-                                    </div>
-                                </article>
-                            ))}
-                        </div>
+                        <PortfolioGallery />
                     </div>
                 </section>
 

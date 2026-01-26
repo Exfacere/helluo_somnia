@@ -108,3 +108,41 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to delete item' }, { status: 500 });
     }
 }
+
+// PATCH - Update a portfolio item (title only for now)
+export async function PATCH(request: NextRequest) {
+    if (!isAuthorized(request)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    try {
+        const body = await request.json();
+        const { index, title } = body;
+
+        if (index === undefined || index === null) {
+            return NextResponse.json({ error: 'Missing item index' }, { status: 400 });
+        }
+
+        if (!title || title.trim() === '') {
+            return NextResponse.json({ error: 'Title cannot be empty' }, { status: 400 });
+        }
+
+        // Get existing items
+        const items = await redis.get<any[]>(PORTFOLIO_KEY) || [];
+
+        if (index < 0 || index >= items.length) {
+            return NextResponse.json({ error: 'Invalid index' }, { status: 400 });
+        }
+
+        // Update the title
+        items[index].title = title.trim();
+
+        // Save back to Redis
+        await redis.set(PORTFOLIO_KEY, items);
+
+        return NextResponse.json({ success: true, item: items[index] });
+    } catch (error) {
+        console.error('Error updating item:', error);
+        return NextResponse.json({ error: 'Failed to update item' }, { status: 500 });
+    }
+}
