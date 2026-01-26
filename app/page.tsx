@@ -5,22 +5,37 @@ import PortfolioGallery from './components/PortfolioGallery';
 
 export default function HomePage() {
     const [isLoaded, setIsLoaded] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
 
     useEffect(() => {
         // Show content immediately
         setIsLoaded(true);
     }, []);
 
+    // Close menu when clicking a link
+    function handleNavClick() {
+        setMenuOpen(false);
+    }
+
     return (
         <>
             {/* Navigation */}
             <nav className="navbar" style={{ opacity: isLoaded ? 1 : 0, transition: 'opacity 0.5s ease' }}>
                 <a href="#hero" className="logo">Helluo_Somnia</a>
-                <ul>
-                    <li><a href="#about">À propos</a></li>
-                    <li><a href="#portfolio">Portfolio</a></li>
-                    <li><a href="#exhibitions">Expositions</a></li>
-                    <li><a href="#contact">Contact</a></li>
+                <button
+                    className="menu-toggle"
+                    onClick={() => setMenuOpen(!menuOpen)}
+                    aria-label="Menu"
+                >
+                    <span style={{ transform: menuOpen ? 'rotate(45deg) translateY(8px)' : 'none' }}></span>
+                    <span style={{ opacity: menuOpen ? 0 : 1 }}></span>
+                    <span style={{ transform: menuOpen ? 'rotate(-45deg) translateY(-8px)' : 'none' }}></span>
+                </button>
+                <ul className={menuOpen ? 'open' : ''}>
+                    <li><a href="#about" onClick={handleNavClick}>À propos</a></li>
+                    <li><a href="#portfolio" onClick={handleNavClick}>Portfolio</a></li>
+                    <li><a href="#exhibitions" onClick={handleNavClick}>Expositions</a></li>
+                    <li><a href="#contact" onClick={handleNavClick}>Contact</a></li>
                 </ul>
             </nav>
 
@@ -120,6 +135,7 @@ export default function HomePage() {
                             action="https://formspree.io/f/xzdrvvvz"
                             method="POST"
                         >
+                            <input type="hidden" name="_next" value="https://helluo-somnia-toi9.vercel.app/merci" />
                             <div className="form-row">
                                 <div className="form-group">
                                     <label htmlFor="name">Nom complet</label>
