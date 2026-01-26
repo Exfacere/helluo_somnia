@@ -1,17 +1,28 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import PortfolioGallery from './components/PortfolioGallery';
 
 export default function HomePage() {
-    // Load external scripts after component mounts
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    // Hide preloader and load scripts after mount
     useEffect(() => {
+        // Hide preloader immediately
+        setIsLoaded(true);
+
+        // Load GSAP scripts for animations
         const loadScript = (src: string) => {
             return new Promise<void>((resolve) => {
+                if (document.querySelector(`script[src="${src}"]`)) {
+                    resolve();
+                    return;
+                }
                 const script = document.createElement('script');
                 script.src = src;
                 script.async = true;
                 script.onload = () => resolve();
+                script.onerror = () => resolve(); // Continue even if script fails
                 document.body.appendChild(script);
             });
         };
@@ -20,25 +31,31 @@ export default function HomePage() {
         loadScript('/vendor/gsap/gsap.min.js')
             .then(() => loadScript('/vendor/gsap/ScrollTrigger.min.js'))
             .then(() => loadScript('/vendor/lenis/lenis.min.js'))
-            .then(() => loadScript('/script.js'));
+            .then(() => {
+                // Initialize animations manually after scripts load
+                if (typeof window !== 'undefined' && (window as any).gsap) {
+                    const gsap = (window as any).gsap;
+
+                    // Simple reveal animation
+                    gsap.utils.toArray('.reveal').forEach((el: Element) => {
+                        gsap.from(el, {
+                            opacity: 0,
+                            y: 30,
+                            duration: 0.8,
+                            scrollTrigger: {
+                                trigger: el,
+                                start: 'top 85%',
+                            }
+                        });
+                    });
+                }
+            });
     }, []);
 
     return (
         <>
-            {/* Preloader */}
-            <div id="preloader" className="preloader">
-                <div className="preloader-content">
-                    <h1 className="preloader-name" id="preloader-name"></h1>
-                    <div className="preloader-line"></div>
-                </div>
-            </div>
-
-            {/* Custom Cursor */}
-            <div className="cursor" id="cursor"></div>
-            <div className="cursor-follower" id="cursor-follower"></div>
-
             {/* Navigation */}
-            <nav className="navbar">
+            <nav className="navbar" style={{ opacity: isLoaded ? 1 : 0, transition: 'opacity 0.5s ease' }}>
                 <a href="#hero" className="logo">Helluo_Somnia</a>
                 <ul>
                     <li><a href="#about">À propos</a></li>
@@ -48,7 +65,7 @@ export default function HomePage() {
                 </ul>
             </nav>
 
-            <main id="main-content">
+            <main id="main-content" style={{ opacity: isLoaded ? 1 : 0, transition: 'opacity 0.5s ease' }}>
                 {/* Hero Section */}
                 <header id="hero" className="hero">
                     <div className="hero-bg">
@@ -60,7 +77,7 @@ export default function HomePage() {
                         />
                     </div>
                     <div className="hero-content">
-                        <h1 className="hero-title" id="hero-title">Helluo_Somnia</h1>
+                        <h1 className="hero-title">Helluo_Somnia</h1>
                         <p className="hero-subtitle">— Artiste Contemporaine —</p>
                     </div>
                     <div className="hero-scroll">
@@ -76,15 +93,15 @@ export default function HomePage() {
                         </div>
                         <div className="about-content">
                             <h2 className="section-title reveal">À propos</h2>
-                            <p className="reveal reveal-delay-1">
+                            <p className="reveal">
                                 Je crée des images qui respirent l&apos;ombre et la lumière. Mon travail explore
                                 les frontières entre le réel et l&apos;imaginaire — silhouettes, matière, silence.
                             </p>
-                            <p className="reveal reveal-delay-2">
+                            <p className="reveal">
                                 Formée en <strong>arts visuels</strong> et en <strong>direction artistique</strong>,
                                 je combine procédés analogiques et outils numériques.
                             </p>
-                            <a href="#contact" className="btn reveal reveal-delay-4">Me contacter</a>
+                            <a href="#contact" className="btn reveal">Me contacter</a>
                         </div>
                     </div>
                 </section>
@@ -106,7 +123,7 @@ export default function HomePage() {
                             <h2 className="section-title reveal">Expositions</h2>
                         </header>
                         <div className="timeline" id="exhibition-timeline">
-                            <article className="timeline-item">
+                            <article className="timeline-item reveal">
                                 <span className="timeline-year">2026</span>
                                 <div className="timeline-content">
                                     <h3 className="timeline-title">Silhouettes et Silences</h3>
@@ -117,7 +134,7 @@ export default function HomePage() {
                                     <p>10 février 2026 — 15 mars 2026</p>
                                 </div>
                             </article>
-                            <article className="timeline-item">
+                            <article className="timeline-item reveal">
                                 <span className="timeline-year">2025</span>
                                 <div className="timeline-content">
                                     <h3 className="timeline-title">Nocturnes d&apos;Encre</h3>
@@ -136,10 +153,10 @@ export default function HomePage() {
                 <section id="contact" className="contact">
                     <div className="container">
                         <h2 className="section-title reveal">Contact</h2>
-                        <p className="reveal reveal-delay-1">
+                        <p className="reveal">
                             Pour toute demande de collaboration, commande ou presse, n&apos;hésitez pas à me contacter.
                         </p>
-                        <form className="contact-form reveal reveal-delay-2" name="contact" method="POST" data-netlify="true">
+                        <form className="contact-form reveal" name="contact" method="POST" data-netlify="true">
                             <input type="hidden" name="form-name" value="contact" />
                             <div className="form-row">
                                 <div className="form-group">
@@ -159,7 +176,7 @@ export default function HomePage() {
                                 <span className="btn-text">Envoyer le message</span>
                             </button>
                         </form>
-                        <div className="social-links reveal reveal-delay-3">
+                        <div className="social-links reveal">
                             <a href="https://www.instagram.com/helluo_somnia/" target="_blank" rel="noopener noreferrer" className="social-link">
                                 Instagram
                             </a>
