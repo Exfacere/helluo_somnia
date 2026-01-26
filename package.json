@@ -1,25 +1,24 @@
 {
-  "name": "codex-web-app",
+  "name": "helluo-somnia",
   "version": "1.0.0",
-  "main": "server.js",
+  "private": true,
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
-    "build": "node build.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
-    "@barba/core": "^2.10.3",
-    "@fortawesome/fontawesome-free": "^7.0.0",
-    "@studio-freight/lenis": "^1.0.42",
-    "animate.css": "^4.1.1",
-    "aos": "^2.3.4",
-    "dotenv": "^10.0.0",
-    "express": "^4.17.1",
-    "gsap": "^3.13.0",
-    "lottie-web": "^5.13.0",
-    "openai": "^3.1.0",
-    "splitting": "^1.1.0",
-    "three": "^0.179.1",
-    "compression": "^1.7.4"
+    "next": "^14.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "cloudinary": "^2.0.0",
+    "@vercel/kv": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "typescript": "^5.0.0"
   }
 }
