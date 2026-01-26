@@ -115,8 +115,11 @@ export default function HomePage() {
                         <p>
                             Pour toute demande de collaboration, commande ou presse, n&apos;hésitez pas à me contacter.
                         </p>
-                        <form className="contact-form" name="contact" method="POST" data-netlify="true">
-                            <input type="hidden" name="form-name" value="contact" />
+                        <form
+                            className="contact-form"
+                            action="https://formspree.io/f/xzdrvvvz"
+                            method="POST"
+                        >
                             <div className="form-row">
                                 <div className="form-group">
                                     <label htmlFor="name">Nom complet</label>
