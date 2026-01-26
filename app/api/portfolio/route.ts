@@ -93,17 +93,26 @@ export async function DELETE(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
-
-        if (!id) {
-            return NextResponse.json({ error: 'Missing item ID' }, { status: 400 });
-        }
+        const indexStr = searchParams.get('index');
 
         const data = await readPortfolio();
-        const initialLength = data.items.length;
-        data.items = data.items.filter((item: any) => item.id !== id);
 
-        if (data.items.length === initialLength) {
-            return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+        if (indexStr !== null) {
+            // Delete by index
+            const index = parseInt(indexStr, 10);
+            if (isNaN(index) || index < 0 || index >= data.items.length) {
+                return NextResponse.json({ error: 'Invalid index' }, { status: 400 });
+            }
+            data.items.splice(index, 1);
+        } else if (id) {
+            // Delete by ID (legacy support)
+            const initialLength = data.items.length;
+            data.items = data.items.filter((item: any) => item.id !== id);
+            if (data.items.length === initialLength) {
+                return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+            }
+        } else {
+            return NextResponse.json({ error: 'Missing item ID or index' }, { status: 400 });
         }
 
         await writePortfolio(data);

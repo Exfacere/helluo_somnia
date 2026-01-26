@@ -18,6 +18,14 @@ const categoryNames: Record<string, string> = {
     divers: 'Divers',
 };
 
+// Helper to resolve image URL
+function getImageUrl(file: string): string {
+    // If it's already a full URL (Cloudinary), return as-is
+    if (file.startsWith('http')) return file;
+    // Otherwise, add /Images/ prefix
+    return `/Images/${file}`;
+}
+
 export default function AdminPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [password, setPassword] = useState('');
@@ -136,11 +144,11 @@ export default function AdminPage() {
         setUploading(false);
     }
 
-    async function handleDelete(id: string) {
+    async function handleDelete(index: number) {
         if (!confirm('Supprimer cette œuvre ?')) return;
 
         try {
-            const res = await fetch(`/api/portfolio?id=${id}`, {
+            const res = await fetch(`/api/portfolio?index=${index}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${getToken()}` },
             });
@@ -223,27 +231,31 @@ export default function AdminPage() {
                         ) : filteredItems.length === 0 ? (
                             <p>Aucune œuvre</p>
                         ) : (
-                            filteredItems.map((item, i) => (
-                                <div key={item.id || i} style={styles.item}>
-                                    <img
-                                        src={item.file}
-                                        alt={item.title}
-                                        style={styles.itemImage}
-                                    />
-                                    <div style={styles.itemOverlay}>
-                                        <span style={styles.itemTitle}>{item.title}</span>
-                                        <span style={styles.itemCategory}>
-                                            {categoryNames[item.category] || item.category}
-                                        </span>
+                            filteredItems.map((item, i) => {
+                                // Find actual index in full items array
+                                const actualIndex = items.indexOf(item);
+                                return (
+                                    <div key={actualIndex} style={styles.item}>
+                                        <img
+                                            src={getImageUrl(item.file)}
+                                            alt={item.title}
+                                            style={styles.itemImage}
+                                        />
+                                        <div style={styles.itemOverlay}>
+                                            <span style={styles.itemTitle}>{item.title}</span>
+                                            <span style={styles.itemCategory}>
+                                                {categoryNames[item.category] || item.category}
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={() => handleDelete(actualIndex)}
+                                            style={styles.deleteBtn}
+                                        >
+                                            ×
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={() => item.id && handleDelete(item.id)}
-                                        style={styles.deleteBtn}
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
                 </div>
