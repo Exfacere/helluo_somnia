@@ -1,6 +1,28 @@
+'use client';
+
+import { useEffect } from 'react';
 import PortfolioGallery from './components/PortfolioGallery';
 
 export default function HomePage() {
+    // Load external scripts after component mounts
+    useEffect(() => {
+        const loadScript = (src: string) => {
+            return new Promise<void>((resolve) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.async = true;
+                script.onload = () => resolve();
+                document.body.appendChild(script);
+            });
+        };
+
+        // Load scripts in order
+        loadScript('/vendor/gsap/gsap.min.js')
+            .then(() => loadScript('/vendor/gsap/ScrollTrigger.min.js'))
+            .then(() => loadScript('/vendor/lenis/lenis.min.js'))
+            .then(() => loadScript('/script.js'));
+    }, []);
+
     return (
         <>
             {/* Preloader */}
@@ -38,7 +60,7 @@ export default function HomePage() {
                         />
                     </div>
                     <div className="hero-content">
-                        <h1 className="hero-title" id="hero-title"></h1>
+                        <h1 className="hero-title" id="hero-title">Helluo_Somnia</h1>
                         <p className="hero-subtitle">— Artiste Contemporaine —</p>
                     </div>
                     <div className="hero-scroll">
@@ -152,12 +174,6 @@ export default function HomePage() {
                     <p>© 2025 Helluo_Somnia — Tous droits réservés</p>
                 </div>
             </footer>
-
-            {/* Scripts */}
-            <script defer src="/vendor/gsap/gsap.min.js"></script>
-            <script defer src="/vendor/gsap/ScrollTrigger.min.js"></script>
-            <script defer src="/vendor/lenis/lenis.min.js"></script>
-            <script defer src="/script.js"></script>
         </>
     );
 }
