@@ -6,50 +6,9 @@ import PortfolioGallery from './components/PortfolioGallery';
 export default function HomePage() {
     const [isLoaded, setIsLoaded] = useState(false);
 
-    // Hide preloader and load scripts after mount
     useEffect(() => {
-        // Hide preloader immediately
+        // Show content immediately
         setIsLoaded(true);
-
-        // Load GSAP scripts for animations
-        const loadScript = (src: string) => {
-            return new Promise<void>((resolve) => {
-                if (document.querySelector(`script[src="${src}"]`)) {
-                    resolve();
-                    return;
-                }
-                const script = document.createElement('script');
-                script.src = src;
-                script.async = true;
-                script.onload = () => resolve();
-                script.onerror = () => resolve(); // Continue even if script fails
-                document.body.appendChild(script);
-            });
-        };
-
-        // Load scripts in order
-        loadScript('/vendor/gsap/gsap.min.js')
-            .then(() => loadScript('/vendor/gsap/ScrollTrigger.min.js'))
-            .then(() => loadScript('/vendor/lenis/lenis.min.js'))
-            .then(() => {
-                // Initialize animations manually after scripts load
-                if (typeof window !== 'undefined' && (window as any).gsap) {
-                    const gsap = (window as any).gsap;
-
-                    // Simple reveal animation
-                    gsap.utils.toArray('.reveal').forEach((el: Element) => {
-                        gsap.from(el, {
-                            opacity: 0,
-                            y: 30,
-                            duration: 0.8,
-                            scrollTrigger: {
-                                trigger: el,
-                                start: 'top 85%',
-                            }
-                        });
-                    });
-                }
-            });
     }, []);
 
     return (
@@ -88,20 +47,20 @@ export default function HomePage() {
                 {/* About Section */}
                 <section id="about" className="about section-alt">
                     <div className="container">
-                        <div className="about-image reveal">
+                        <div className="about-image">
                             <img src="https://res.cloudinary.com/duxandnre/image/upload/v1769433419/helluo-somnia/about-profile.webp" alt="Portrait de Helluo_Somnia" width={600} height={800} />
                         </div>
                         <div className="about-content">
-                            <h2 className="section-title reveal">À propos</h2>
-                            <p className="reveal">
+                            <h2 className="section-title">À propos</h2>
+                            <p>
                                 Je crée des images qui respirent l&apos;ombre et la lumière. Mon travail explore
                                 les frontières entre le réel et l&apos;imaginaire — silhouettes, matière, silence.
                             </p>
-                            <p className="reveal">
+                            <p>
                                 Formée en <strong>arts visuels</strong> et en <strong>direction artistique</strong>,
                                 je combine procédés analogiques et outils numériques.
                             </p>
-                            <a href="#contact" className="btn reveal">Me contacter</a>
+                            <a href="#contact" className="btn">Me contacter</a>
                         </div>
                     </div>
                 </section>
@@ -110,7 +69,7 @@ export default function HomePage() {
                 <section id="portfolio" className="portfolio">
                     <div className="container">
                         <header className="section-header">
-                            <h2 className="section-title reveal">Portfolio</h2>
+                            <h2 className="section-title">Portfolio</h2>
                         </header>
                         <PortfolioGallery />
                     </div>
@@ -120,10 +79,10 @@ export default function HomePage() {
                 <section id="exhibitions" className="exhibitions section-alt">
                     <div className="container">
                         <header className="section-header">
-                            <h2 className="section-title reveal">Expositions</h2>
+                            <h2 className="section-title">Expositions</h2>
                         </header>
                         <div className="timeline" id="exhibition-timeline">
-                            <article className="timeline-item reveal">
+                            <article className="timeline-item visible">
                                 <span className="timeline-year">2026</span>
                                 <div className="timeline-content">
                                     <h3 className="timeline-title">Silhouettes et Silences</h3>
@@ -134,7 +93,7 @@ export default function HomePage() {
                                     <p>10 février 2026 — 15 mars 2026</p>
                                 </div>
                             </article>
-                            <article className="timeline-item reveal">
+                            <article className="timeline-item visible">
                                 <span className="timeline-year">2025</span>
                                 <div className="timeline-content">
                                     <h3 className="timeline-title">Nocturnes d&apos;Encre</h3>
@@ -152,11 +111,11 @@ export default function HomePage() {
                 {/* Contact Section */}
                 <section id="contact" className="contact">
                     <div className="container">
-                        <h2 className="section-title reveal">Contact</h2>
-                        <p className="reveal">
+                        <h2 className="section-title">Contact</h2>
+                        <p>
                             Pour toute demande de collaboration, commande ou presse, n&apos;hésitez pas à me contacter.
                         </p>
-                        <form className="contact-form reveal" name="contact" method="POST" data-netlify="true">
+                        <form className="contact-form" name="contact" method="POST" data-netlify="true">
                             <input type="hidden" name="form-name" value="contact" />
                             <div className="form-row">
                                 <div className="form-group">
@@ -176,7 +135,7 @@ export default function HomePage() {
                                 <span className="btn-text">Envoyer le message</span>
                             </button>
                         </form>
-                        <div className="social-links reveal">
+                        <div className="social-links">
                             <a href="https://www.instagram.com/helluo_somnia/" target="_blank" rel="noopener noreferrer" className="social-link">
                                 Instagram
                             </a>
