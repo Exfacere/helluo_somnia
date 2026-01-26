@@ -103,7 +103,7 @@ h6 {
 }
 
 h1 {
-  font-size: clamp(3rem, 8vw, 6rem);
+  font-size: clamp(2rem, 5vw, 4rem);
 }
 
 h2 {
@@ -367,9 +367,9 @@ textarea:focus-visible {
 }
 
 .hero-title {
-  font-size: clamp(3.5rem, 12vw, 10rem);
+  font-size: clamp(2.5rem, 8vw, 5rem);
   font-weight: 400;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   line-height: 1;
   margin-bottom: var(--space-md);
@@ -540,7 +540,7 @@ section {
 
 .about .container {
   display: grid;
-  grid-template-columns: 1fr 1.5fr;
+  grid-template-columns: 1fr 1.2fr;
   gap: var(--space-xl);
   align-items: center;
 }
@@ -562,10 +562,10 @@ section {
 
 .about-image img {
   width: 100%;
-  max-width: 350px;
+  max-width: 400px;
   aspect-ratio: 3/4;
   object-fit: cover;
-  border-radius: 50% / 40%;
+  border-radius: 8px;
   filter: grayscale(20%);
   transition: filter var(--duration-slow);
 }
