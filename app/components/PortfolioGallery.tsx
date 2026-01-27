@@ -98,6 +98,34 @@ export default function PortfolioGallery() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [modalImage, filteredItems]);
 
+    // Touch/swipe support for mobile
+    const [touchStart, setTouchStart] = useState<number | null>(null);
+    const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+    const minSwipeDistance = 50;
+
+    function handleTouchStart(e: React.TouchEvent) {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    }
+
+    function handleTouchMove(e: React.TouchEvent) {
+        setTouchEnd(e.targetTouches[0].clientX);
+    }
+
+    function handleTouchEnd() {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        if (isLeftSwipe) {
+            navigateModal(1);
+        } else if (isRightSwipe) {
+            navigateModal(-1);
+        }
+    }
+
     function navigateModal(direction: number) {
         if (!modalImage) return;
         const currentIndex = filteredItems.findIndex(item => item.id === modalImage.id || item.file === modalImage.file);
@@ -243,6 +271,9 @@ export default function PortfolioGallery() {
                 <div
                     className="modal-overlay"
                     onClick={() => setModalImage(null)}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
                     style={{
                         position: 'fixed',
                         top: 0,
@@ -255,6 +286,7 @@ export default function PortfolioGallery() {
                         justifyContent: 'center',
                         zIndex: 9999,
                         cursor: 'zoom-out',
+                        touchAction: 'pan-y',
                     }}
                 >
                     <button
