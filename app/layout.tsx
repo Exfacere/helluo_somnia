@@ -56,6 +56,37 @@ export default function RootLayout({
                     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap"
                     rel="stylesheet"
                 />
+                {/* JSON-LD Structured Data for SEO */}
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": "Person",
+                            "name": "Helluo_Somnia",
+                            "jobTitle": "Artiste Contemporaine",
+                            "description": "Artiste contemporaine spécialisée en pyrogravure, peinture, collage et gravure.",
+                            "url": "https://helluo-somnia-toi9.vercel.app",
+                            "sameAs": [],
+                            "knowsAbout": ["Pyrogravure", "Peinture", "Collage", "Gravure", "Art contemporain"],
+                            "image": "https://res.cloudinary.com/duxandnre/image/upload/v1769433418/helluo-somnia/pyro3-hero.webp",
+                            "@graph": [
+                                {
+                                    "@type": "WebSite",
+                                    "name": "Helluo_Somnia",
+                                    "url": "https://helluo-somnia-toi9.vercel.app",
+                                    "description": "Portfolio de Helluo_Somnia, artiste contemporaine."
+                                },
+                                {
+                                    "@type": "CollectionPage",
+                                    "name": "Portfolio",
+                                    "url": "https://helluo-somnia-toi9.vercel.app/#portfolio",
+                                    "description": "Collection d'œuvres originales : pyrogravures, peintures, collages et gravures."
+                                }
+                            ]
+                        })
+                    }}
+                />
             </head>
             <body>
                 {children}

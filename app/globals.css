@@ -67,7 +67,7 @@
 
 html {
   font-size: 16px;
-  /* scroll-behavior handled by Lenis */
+  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

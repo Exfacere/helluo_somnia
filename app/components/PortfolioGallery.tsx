@@ -274,6 +274,22 @@ export default function PortfolioGallery() {
                         ×
                     </button>
 
+                    {/* Image counter */}
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: '2rem',
+                            left: '2rem',
+                            color: 'rgba(255,255,255,0.7)',
+                            fontSize: '0.875rem',
+                            fontFamily: 'Inter, sans-serif',
+                            letterSpacing: '0.05em',
+                            zIndex: 10000,
+                        }}
+                    >
+                        {filteredItems.findIndex(item => item.id === modalImage.id || item.file === modalImage.file) + 1} / {filteredItems.length}
+                    </div>
+
                     {/* Navigation arrows */}
                     {filteredItems.findIndex(item => item.id === modalImage.id || item.file === modalImage.file) > 0 && (
                         <button
