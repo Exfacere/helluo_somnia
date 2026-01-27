@@ -19,10 +19,20 @@ const categoryNames: Record<string, string> = {
     divers: 'Divers',
 };
 
-// Helper to resolve image URL
-function getImageUrl(file: string): string {
-    if (file.startsWith('http')) return file;
-    return `/Images/${file}`;
+// Helper to resolve image URL with Cloudinary optimizations
+function getImageUrl(file: string, size: 'thumb' | 'full' = 'thumb'): string {
+    if (!file.startsWith('http')) return `/Images/${file}`;
+
+    // Apply Cloudinary transformations for optimization
+    if (file.includes('cloudinary.com')) {
+        // Insert transformations after /upload/
+        const transformations = size === 'thumb'
+            ? 'f_auto,q_auto,w_400,c_fill'
+            : 'f_auto,q_auto,w_1200';
+        return file.replace('/upload/', `/upload/${transformations}/`);
+    }
+
+    return file;
 }
 
 const ITEMS_PER_PAGE = 15;
@@ -243,7 +253,7 @@ export default function PortfolioGallery() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <img
-                            src={getImageUrl(modalImage.file)}
+                            src={getImageUrl(modalImage.file, 'full')}
                             alt={modalImage.title}
                             style={{
                                 maxWidth: '100%',
