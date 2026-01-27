@@ -78,6 +78,7 @@ export async function DELETE(request: NextRequest) {
 
         // Get existing items
         const items = await redis.get<any[]>(PORTFOLIO_KEY) || [];
+        let deletedItem: any = null;
 
         if (indexStr !== null) {
             // Delete by index
@@ -85,18 +86,53 @@ export async function DELETE(request: NextRequest) {
             if (isNaN(index) || index < 0 || index >= items.length) {
                 return NextResponse.json({ error: 'Invalid index' }, { status: 400 });
             }
+            deletedItem = items[index];
             items.splice(index, 1);
         } else if (id) {
             // Delete by ID
-            const initialLength = items.length;
-            const filtered = items.filter((item: any) => item.id !== id);
-            if (filtered.length === initialLength) {
+            const itemIndex = items.findIndex((item: any) => item.id === id);
+            if (itemIndex === -1) {
                 return NextResponse.json({ error: 'Item not found' }, { status: 404 });
             }
-            items.length = 0;
-            items.push(...filtered);
+            deletedItem = items[itemIndex];
+            items.splice(itemIndex, 1);
         } else {
             return NextResponse.json({ error: 'Missing item ID or index' }, { status: 400 });
+        }
+
+        // Delete from Cloudinary if public_id exists
+        if (deletedItem?.public_id) {
+            try {
+                const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+                const apiKey = process.env.CLOUDINARY_API_KEY;
+                const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+                const timestamp = Math.round(Date.now() / 1000);
+                const signatureString = `public_id=${deletedItem.public_id}&timestamp=${timestamp}${apiSecret}`;
+
+                // Create SHA1 signature
+                const encoder = new TextEncoder();
+                const data = encoder.encode(signatureString);
+                const hashBuffer = await crypto.subtle.digest('SHA-1', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+                const formData = new FormData();
+                formData.append('public_id', deletedItem.public_id);
+                formData.append('timestamp', timestamp.toString());
+                formData.append('api_key', apiKey!);
+                formData.append('signature', signature);
+
+                await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                console.log('Image deleted from Cloudinary:', deletedItem.public_id);
+            } catch (cloudinaryError) {
+                console.error('Error deleting from Cloudinary:', cloudinaryError);
+                // Continue even if Cloudinary deletion fails
+            }
         }
 
         // Save back to Redis
