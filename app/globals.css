@@ -67,7 +67,7 @@
 
 html {
   font-size: 16px;
-  scroll-behavior: smooth;
+  /* scroll-behavior handled by Lenis */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -993,6 +993,14 @@ section {
   object-fit: cover;
   border-radius: 4px;
   margin-top: var(--space-sm);
+}
+
+.timeline-description {
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin-top: var(--space-sm);
+  font-style: italic;
+  line-height: 1.5;
 }
 
 /* ============================================

@@ -51,7 +51,7 @@ export default function AdminPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Active tab state
-    const [activeTab, setActiveTab] = useState<'portfolio' | 'exhibitions'>('portfolio');
+    const [activeTab, setActiveTab] = useState<'portfolio' | 'exhibitions' | 'categories'>('portfolio');
 
     // Form state for portfolio
     const [title, setTitle] = useState('');
@@ -74,11 +74,18 @@ export default function AdminPage() {
     const [exhDescription, setExhDescription] = useState('');
     const [editingExhibition, setEditingExhibition] = useState<string | null>(null);
 
+    // Categories state
+    const [categories, setCategories] = useState<{ id: string; name: string; order: number }[]>([]);
+    const [categoriesLoading, setCategoriesLoading] = useState(false);
+    const [newCatId, setNewCatId] = useState('');
+    const [newCatName, setNewCatName] = useState('');
+
     // Load items when authenticated
     useEffect(() => {
         if (isAuthenticated) {
             loadItems();
             loadExhibitions();
+            loadCategories();
         }
     }, [isAuthenticated]);
 
@@ -105,6 +112,76 @@ export default function AdminPage() {
         }
         setExhibitionsLoading(false);
     }
+
+    async function loadCategories() {
+        setCategoriesLoading(true);
+        try {
+            const res = await fetch('/api/categories');
+            const data = await res.json();
+            setCategories(data.categories || []);
+        } catch (err) {
+            setError('Erreur de chargement des catégories');
+        }
+        setCategoriesLoading(false);
+    }
+
+    async function handleAddCategory(e: FormEvent) {
+        e.preventDefault();
+        setError('');
+        setSuccess('');
+
+        if (!newCatId || !newCatName) {
+            setError('Veuillez remplir l\'ID et le nom');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/categories', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: newCatId, name: newCatName }),
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to add category');
+            }
+
+            setSuccess('Catégorie ajoutée !');
+            setTimeout(() => setSuccess(''), 3000);
+
+            setNewCatId('');
+            setNewCatName('');
+            loadCategories();
+        } catch (err: any) {
+            setError(err.message || 'Erreur lors de l\'ajout');
+        }
+    }
+
+    async function handleDeleteCategory(id: string) {
+        if (!confirm('Supprimer cette catégorie ?')) return;
+
+        try {
+            const res = await fetch(`/api/categories?id=${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                },
+            });
+
+            if (!res.ok) throw new Error('Delete failed');
+
+            setSuccess('Catégorie supprimée !');
+            setTimeout(() => setSuccess(''), 3000);
+            loadCategories();
+        } catch (err) {
+            setError('Erreur lors de la suppression');
+        }
+    }
+
 
     async function handleAddExhibition(e: FormEvent) {
         e.preventDefault();
@@ -175,7 +252,7 @@ export default function AdminPage() {
         }
     }
 
-    function startEditExhibition(exh: Exhibition) {
+    function startEditingExhibition(exh: Exhibition) {
         setEditingExhibition(exh.id);
         setExhTitle(exh.title);
         setExhLocation(exh.location);
@@ -185,7 +262,7 @@ export default function AdminPage() {
         setExhDescription(exh.description || '');
     }
 
-    function cancelEditExhibition() {
+    function cancelEditingExhibition() {
         setEditingExhibition(null);
         setExhTitle('');
         setExhLocation('');
@@ -195,10 +272,19 @@ export default function AdminPage() {
         setExhDescription('');
     }
 
-    async function handleSaveExhibition(e: FormEvent) {
+    async function handleEditExhibition(e: FormEvent) {
         e.preventDefault();
         if (!editingExhibition) return;
 
+        setError('');
+        setSuccess('');
+
+        if (!exhTitle || !exhLocation || !exhCity || !exhStartDate) {
+            setError('Veuillez remplir tous les champs obligatoires');
+            return;
+        }
+
+        setUploading(true);
         try {
             const res = await fetch('/api/exhibitions', {
                 method: 'PATCH',
@@ -217,15 +303,18 @@ export default function AdminPage() {
                 }),
             });
 
-            if (!res.ok) throw new Error('Update failed');
+            if (!res.ok) throw new Error('Failed to update exhibition');
 
             setSuccess('Exposition modifiée !');
             setTimeout(() => setSuccess(''), 3000);
-            cancelEditExhibition();
+
+            // Reset form and exit edit mode
+            cancelEditingExhibition();
             loadExhibitions();
         } catch (err) {
             setError('Erreur lors de la modification');
         }
+        setUploading(false);
     }
 
     const [loginLoading, setLoginLoading] = useState(false);
@@ -459,6 +548,15 @@ export default function AdminPage() {
                 >
                     Expositions
                 </button>
+                <button
+                    onClick={() => setActiveTab('categories')}
+                    style={{
+                        ...styles.tab,
+                        ...(activeTab === 'categories' ? styles.tabActive : {}),
+                    }}
+                >
+                    Catégories
+                </button>
             </div>
 
             {/* Portfolio Tab Content */}
@@ -680,138 +778,58 @@ export default function AdminPage() {
                                                 background: '#f9f9f9',
                                                 padding: '1rem',
                                                 borderRadius: '8px',
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'flex-start',
                                             }}
                                         >
-                                            {editingExhibition === exh.id ? (
-                                                // Mode édition
-                                                <form onSubmit={handleSaveExhibition} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                    <input
-                                                        type="text"
-                                                        value={exhTitle}
-                                                        onChange={(e) => setExhTitle(e.target.value)}
-                                                        placeholder="Titre"
-                                                        required
-                                                        style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-                                                    />
-                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                        <input
-                                                            type="text"
-                                                            value={exhLocation}
-                                                            onChange={(e) => setExhLocation(e.target.value)}
-                                                            placeholder="Lieu"
-                                                            required
-                                                            style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-                                                        />
-                                                        <input
-                                                            type="text"
-                                                            value={exhCity}
-                                                            onChange={(e) => setExhCity(e.target.value)}
-                                                            placeholder="Ville"
-                                                            required
-                                                            style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-                                                        />
-                                                    </div>
-                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                        <input
-                                                            type="date"
-                                                            value={exhStartDate}
-                                                            onChange={(e) => setExhStartDate(e.target.value)}
-                                                            required
-                                                            style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-                                                        />
-                                                        <input
-                                                            type="date"
-                                                            value={exhEndDate}
-                                                            onChange={(e) => setExhEndDate(e.target.value)}
-                                                            style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
-                                                        />
-                                                    </div>
-                                                    <textarea
-                                                        value={exhDescription}
-                                                        onChange={(e) => setExhDescription(e.target.value)}
-                                                        placeholder="Description (optionnel)"
-                                                        style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', minHeight: '60px' }}
-                                                    />
-                                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                                        <button
-                                                            type="button"
-                                                            onClick={cancelEditExhibition}
-                                                            style={{
-                                                                padding: '0.5rem 1rem',
-                                                                background: '#6c757d',
-                                                                color: '#fff',
-                                                                border: 'none',
-                                                                borderRadius: '4px',
-                                                                cursor: 'pointer',
-                                                            }}
-                                                        >
-                                                            Annuler
-                                                        </button>
-                                                        <button
-                                                            type="submit"
-                                                            style={{
-                                                                padding: '0.5rem 1rem',
-                                                                background: '#C9A962',
-                                                                color: '#fff',
-                                                                border: 'none',
-                                                                borderRadius: '4px',
-                                                                cursor: 'pointer',
-                                                            }}
-                                                        >
-                                                            Enregistrer
-                                                        </button>
-                                                    </div>
-                                                </form>
-                                            ) : (
-                                                // Mode affichage
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                    <div>
-                                                        <h3 style={{ margin: '0 0 0.25rem', fontWeight: 600, fontSize: '1rem' }}>{exh.title}</h3>
-                                                        <p style={{ margin: '0 0 0.25rem', color: '#666', fontSize: '0.875rem' }}>
-                                                            📍 {exh.location}, {exh.city}
-                                                        </p>
-                                                        <p style={{ margin: '0', color: '#C9A962', fontSize: '0.75rem' }}>
-                                                            📅 {new Date(exh.startDate).toLocaleDateString('fr-FR')}
-                                                            {exh.endDate && ` - ${new Date(exh.endDate).toLocaleDateString('fr-FR')}`}
-                                                        </p>
-                                                        {exh.description && (
-                                                            <p style={{ margin: '0.5rem 0 0', color: '#444', fontSize: '0.875rem' }}>{exh.description}</p>
-                                                        )}
-                                                    </div>
-                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                        <button
-                                                            onClick={() => startEditExhibition(exh)}
-                                                            style={{
-                                                                background: '#C9A962',
-                                                                color: '#fff',
-                                                                border: 'none',
-                                                                borderRadius: '50%',
-                                                                width: '28px',
-                                                                height: '28px',
-                                                                cursor: 'pointer',
-                                                                fontSize: '0.75rem',
-                                                            }}
-                                                        >
-                                                            ✎
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteExhibition(exh.id)}
-                                                            style={{
-                                                                background: '#DC3545',
-                                                                color: '#fff',
-                                                                border: 'none',
-                                                                borderRadius: '50%',
-                                                                width: '28px',
-                                                                height: '28px',
-                                                                cursor: 'pointer',
-                                                                fontSize: '1rem',
-                                                            }}
-                                                        >
-                                                            ×
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
+                                            <div>
+                                                <h3 style={{ margin: '0 0 0.25rem', fontWeight: 600, fontSize: '1rem' }}>{exh.title}</h3>
+                                                <p style={{ margin: '0 0 0.25rem', color: '#666', fontSize: '0.875rem' }}>
+                                                    📍 {exh.location}, {exh.city}
+                                                </p>
+                                                <p style={{ margin: '0', color: '#C9A962', fontSize: '0.75rem' }}>
+                                                    📅 {new Date(exh.startDate).toLocaleDateString('fr-FR')}
+                                                    {exh.endDate && ` - ${new Date(exh.endDate).toLocaleDateString('fr-FR')}`}
+                                                </p>
+                                                {exh.description && (
+                                                    <p style={{ margin: '0.5rem 0 0', color: '#444', fontSize: '0.875rem' }}>{exh.description}</p>
+                                                )}
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button
+                                                    onClick={() => startEditingExhibition(exh)}
+                                                    style={{
+                                                        background: '#C9A962',
+                                                        color: '#fff',
+                                                        border: 'none',
+                                                        borderRadius: '50%',
+                                                        width: '28px',
+                                                        height: '28px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '0.75rem',
+                                                    }}
+                                                    title="Modifier"
+                                                >
+                                                    ✎
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteExhibition(exh.id)}
+                                                    style={{
+                                                        background: '#DC3545',
+                                                        color: '#fff',
+                                                        border: 'none',
+                                                        borderRadius: '50%',
+                                                        width: '28px',
+                                                        height: '28px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '1rem',
+                                                    }}
+                                                    title="Supprimer"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -823,13 +841,31 @@ export default function AdminPage() {
                     <div style={styles.sidebar}>
                         <div style={styles.card}>
                             <div style={styles.cardHeader}>
-                                <h2 style={styles.cardTitle}>Ajouter une exposition</h2>
+                                <h2 style={styles.cardTitle}>
+                                    {editingExhibition ? 'Modifier l\'exposition' : 'Ajouter une exposition'}
+                                </h2>
+                                {editingExhibition && (
+                                    <button
+                                        type="button"
+                                        onClick={cancelEditingExhibition}
+                                        style={{
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: '#666',
+                                            cursor: 'pointer',
+                                            fontSize: '0.875rem',
+                                            textDecoration: 'underline',
+                                        }}
+                                    >
+                                        Annuler
+                                    </button>
+                                )}
                             </div>
                             <div style={styles.cardBody}>
                                 {error && <div style={styles.alertError}>{error}</div>}
                                 {success && <div style={styles.alertSuccess}>{success}</div>}
 
-                                <form onSubmit={handleAddExhibition}>
+                                <form onSubmit={editingExhibition ? handleEditExhibition : handleAddExhibition}>
                                     <div style={styles.formGroup}>
                                         <label style={styles.label}>Titre *</label>
                                         <input
@@ -902,10 +938,107 @@ export default function AdminPage() {
                                             opacity: uploading ? 0.7 : 1,
                                         }}
                                     >
-                                        {uploading ? 'Ajout en cours...' : '+ Ajouter l\'exposition'}
+                                        {uploading
+                                            ? (editingExhibition ? 'Modification...' : 'Ajout en cours...')
+                                            : (editingExhibition ? '✓ Modifier l\'exposition' : '+ Ajouter l\'exposition')}
                                     </button>
                                 </form>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Categories Tab Content */}
+            {activeTab === 'categories' && (
+                <div style={styles.content}>
+                    {/* Categories List */}
+                    <div style={styles.card}>
+                        <div style={styles.cardHeader}>
+                            <h2 style={styles.cardTitle}>Catégories du Portfolio</h2>
+                            <span style={styles.count}>{categories.length} catégories</span>
+                        </div>
+
+                        <div style={{ padding: '1rem' }}>
+                            {categoriesLoading ? (
+                                <p>Chargement...</p>
+                            ) : categories.length === 0 ? (
+                                <p>Aucune catégorie</p>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    {categories.map((cat) => (
+                                        <div
+                                            key={cat.id}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                padding: '0.75rem 1rem',
+                                                background: '#2A2A2A',
+                                                borderRadius: '6px',
+                                            }}
+                                        >
+                                            <div>
+                                                <strong style={{ color: '#C9A962' }}>{cat.name}</strong>
+                                                <span style={{ color: '#888', marginLeft: '0.75rem', fontSize: '0.875rem' }}>
+                                                    ID: {cat.id}
+                                                </span>
+                                            </div>
+                                            <button
+                                                onClick={() => handleDeleteCategory(cat.id)}
+                                                style={{
+                                                    background: 'transparent',
+                                                    border: '1px solid #444',
+                                                    color: '#f66',
+                                                    width: '32px',
+                                                    height: '32px',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '1.25rem',
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Add category form */}
+                        <div style={styles.uploadSection}>
+                            <h3 style={styles.uploadTitle}>Ajouter une catégorie</h3>
+
+                            <form onSubmit={handleAddCategory}>
+                                <div style={styles.formGroup}>
+                                    <label style={styles.label}>ID (minuscules, sans espaces)</label>
+                                    <input
+                                        type="text"
+                                        value={newCatId}
+                                        onChange={(e) => setNewCatId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+                                        placeholder="ex: sculpture"
+                                        style={styles.input}
+                                    />
+                                </div>
+
+                                <div style={styles.formGroup}>
+                                    <label style={styles.label}>Nom affiché</label>
+                                    <input
+                                        type="text"
+                                        value={newCatName}
+                                        onChange={(e) => setNewCatName(e.target.value)}
+                                        placeholder="ex: Sculptures"
+                                        style={styles.input}
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    style={styles.submitBtn}
+                                >
+                                    + Ajouter la catégorie
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>

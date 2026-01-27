@@ -1,33 +1,38 @@
 'use client';
 
-import { useEffect } from 'react';
-import { gsap } from 'gsap';
+import { useEffect, useRef } from 'react';
+import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-// Register ScrollTrigger plugin
+// Register GSAP plugin
 if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
 }
 
 export function useScrollAnimations() {
-    useEffect(() => {
-        // Ensure we're in the browser
-        if (typeof window === 'undefined') return;
+    const initialized = useRef(false);
 
-        // Small delay to ensure DOM is ready
+    useEffect(() => {
+        // Prevent double initialization
+        if (initialized.current) return;
+        initialized.current = true;
+
+        // Wait for DOM to be ready
         const timer = setTimeout(() => {
             // Animate section titles
-            gsap.utils.toArray('.section-title').forEach((el) => {
-                gsap.fromTo(
-                    el as Element,
-                    { opacity: 0, y: 50 },
+            gsap.utils.toArray('.section-title').forEach((el: any) => {
+                gsap.fromTo(el,
+                    {
+                        opacity: 0,
+                        y: 30
+                    },
                     {
                         opacity: 1,
                         y: 0,
                         duration: 0.8,
                         ease: 'power2.out',
                         scrollTrigger: {
-                            trigger: el as Element,
+                            trigger: el,
                             start: 'top 85%',
                             toggleActions: 'play none none none',
                         },
@@ -38,9 +43,8 @@ export function useScrollAnimations() {
             // Animate about section content
             const aboutContent = document.querySelector('.about-content');
             if (aboutContent) {
-                gsap.fromTo(
-                    aboutContent,
-                    { opacity: 0, x: 50 },
+                gsap.fromTo(aboutContent,
+                    { opacity: 0, x: 30 },
                     {
                         opacity: 1,
                         x: 0,
@@ -58,9 +62,8 @@ export function useScrollAnimations() {
             // Animate about image
             const aboutImage = document.querySelector('.about-image');
             if (aboutImage) {
-                gsap.fromTo(
-                    aboutImage,
-                    { opacity: 0, x: -50 },
+                gsap.fromTo(aboutImage,
+                    { opacity: 0, x: -30 },
                     {
                         opacity: 1,
                         x: 0,
@@ -75,19 +78,18 @@ export function useScrollAnimations() {
                 );
             }
 
-            // Animate timeline items with stagger
-            gsap.utils.toArray('.timeline-item').forEach((el, index) => {
-                gsap.fromTo(
-                    el as Element,
+            // Animate timeline items
+            gsap.utils.toArray('.timeline-item').forEach((el: any, i: number) => {
+                gsap.fromTo(el,
                     { opacity: 0, y: 30 },
                     {
                         opacity: 1,
                         y: 0,
                         duration: 0.6,
-                        delay: index * 0.1,
+                        delay: i * 0.1,
                         ease: 'power2.out',
                         scrollTrigger: {
-                            trigger: el as Element,
+                            trigger: el,
                             start: 'top 85%',
                             toggleActions: 'play none none none',
                         },
@@ -98,8 +100,7 @@ export function useScrollAnimations() {
             // Animate contact form
             const contactForm = document.querySelector('.contact-form');
             if (contactForm) {
-                gsap.fromTo(
-                    contactForm,
+                gsap.fromTo(contactForm,
                     { opacity: 0, y: 30 },
                     {
                         opacity: 1,
@@ -114,12 +115,31 @@ export function useScrollAnimations() {
                     }
                 );
             }
+
+            // Hero parallax effect
+            const heroBg = document.querySelector('.hero-bg img');
+            if (heroBg) {
+                gsap.to(heroBg, {
+                    y: 100,
+                    ease: 'none',
+                    scrollTrigger: {
+                        trigger: '.hero',
+                        start: 'top top',
+                        end: 'bottom top',
+                        scrub: true,
+                    },
+                });
+            }
         }, 100);
 
-        // Cleanup
         return () => {
             clearTimeout(timer);
-            ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+            ScrollTrigger.getAll().forEach(trigger => trigger.kill());
         };
     }, []);
+}
+
+export default function ScrollAnimations() {
+    useScrollAnimations();
+    return null;
 }

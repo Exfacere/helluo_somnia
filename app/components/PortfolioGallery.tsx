@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import PortfolioSkeleton from './PortfolioSkeleton';
 
 interface PortfolioItem {
     id?: string;
@@ -11,133 +10,86 @@ interface PortfolioItem {
     createdAt?: string;
 }
 
-const categoryNames: Record<string, string> = {
-    all: 'Toutes',
-    pyro: 'Pyrogravures',
-    peinture: 'Peintures',
-    collage: 'Collages',
-    gravure: 'Gravures',
-    divers: 'Divers',
-};
+interface Category {
+    id: string;
+    name: string;
+    order: number;
+}
 
 // Helper to resolve image URL with Cloudinary optimizations
-function getImageUrl(file: string, size: 'thumb' | 'full' = 'thumb'): string {
-    if (!file.startsWith('http')) return `/Images/${file}`;
-
-    // Apply Cloudinary transformations for optimization
-    if (file.includes('cloudinary.com')) {
-        // Insert transformations after /upload/
-        const transformations = size === 'thumb'
-            ? 'f_auto,q_auto,w_400,c_fill'
-            : 'f_auto,q_auto,w_1200';
-        return file.replace('/upload/', `/upload/${transformations}/`);
+function getImageUrl(file: string, size: 'thumbnail' | 'full' = 'thumbnail'): string {
+    if (file.startsWith('http')) {
+        // Add Cloudinary transformations for optimization
+        if (file.includes('res.cloudinary.com')) {
+            // Insert transformations after /upload/
+            const transformations = size === 'thumbnail'
+                ? 'f_auto,q_auto,w_600,c_fill'  // Optimized thumbnails
+                : 'f_auto,q_auto';               // Full size with auto format/quality
+            return file.replace('/upload/', `/upload/${transformations}/`);
+        }
+        return file;
     }
-
-    return file;
+    return `/Images/${file}`;
 }
 
 const ITEMS_PER_PAGE = 15;
 
 export default function PortfolioGallery() {
     const [items, setItems] = useState<PortfolioItem[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
     const [filter, setFilter] = useState('all');
     const [loading, setLoading] = useState(true);
     const [modalImage, setModalImage] = useState<PortfolioItem | null>(null);
-    const [modalLoading, setModalLoading] = useState(false);
     const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
 
     useEffect(() => {
-        loadPortfolio();
+        loadData();
     }, []);
 
-    async function loadPortfolio() {
+    async function loadData() {
         try {
-            const res = await fetch('/api/portfolio');
-            const data = await res.json();
-            // Sort by createdAt descending (most recent first)
-            const sorted = (data.items || []).sort((a: PortfolioItem, b: PortfolioItem) => {
+            // Load both portfolio items and categories in parallel
+            const [portfolioRes, categoriesRes] = await Promise.all([
+                fetch('/api/portfolio'),
+                fetch('/api/categories'),
+            ]);
+
+            const portfolioData = await portfolioRes.json();
+            const categoriesData = await categoriesRes.json();
+
+            // Sort items by createdAt descending (most recent first)
+            const sorted = (portfolioData.items || []).sort((a: PortfolioItem, b: PortfolioItem) => {
                 if (!a.createdAt && !b.createdAt) return 0;
                 if (!a.createdAt) return 1;
                 if (!b.createdAt) return -1;
                 return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
             });
+
             setItems(sorted);
+            setCategories(categoriesData.categories || []);
         } catch (err) {
-            console.error('Error loading portfolio:', err);
+            console.error('Error loading data:', err);
         }
         setLoading(false);
     }
 
-    // Compute filtered items
-    const filteredItems = filter === 'all'
-        ? items
-        : items.filter(item => item.category === filter);
-
-    const visibleItems = filteredItems.slice(0, visibleCount);
-    const hasMore = visibleCount < filteredItems.length;
+    // Build category names map from dynamic categories
+    const categoryNames: Record<string, string> = { all: 'Toutes' };
+    categories.forEach(cat => {
+        categoryNames[cat.id] = cat.name;
+    });
 
     // Reset visible count when filter changes
     useEffect(() => {
         setVisibleCount(ITEMS_PER_PAGE);
     }, [filter]);
 
-    // Keyboard navigation for modal
-    useEffect(() => {
-        if (!modalImage) return;
+    const filteredItems = filter === 'all'
+        ? items
+        : items.filter(item => item.category === filter);
 
-        function handleKeyDown(e: KeyboardEvent) {
-            if (e.key === 'Escape') {
-                setModalImage(null);
-            } else if (e.key === 'ArrowLeft') {
-                navigateModal(-1);
-            } else if (e.key === 'ArrowRight') {
-                navigateModal(1);
-            }
-        }
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [modalImage, filteredItems]);
-
-    // Touch/swipe support for mobile
-    const [touchStart, setTouchStart] = useState<number | null>(null);
-    const [touchEnd, setTouchEnd] = useState<number | null>(null);
-
-    const minSwipeDistance = 50;
-
-    function handleTouchStart(e: React.TouchEvent) {
-        setTouchEnd(null);
-        setTouchStart(e.targetTouches[0].clientX);
-    }
-
-    function handleTouchMove(e: React.TouchEvent) {
-        setTouchEnd(e.targetTouches[0].clientX);
-    }
-
-    function handleTouchEnd() {
-        if (!touchStart || !touchEnd) return;
-        const distance = touchStart - touchEnd;
-        const isLeftSwipe = distance > minSwipeDistance;
-        const isRightSwipe = distance < -minSwipeDistance;
-
-        if (isLeftSwipe) {
-            navigateModal(1);
-        } else if (isRightSwipe) {
-            navigateModal(-1);
-        }
-    }
-
-    function navigateModal(direction: number) {
-        if (!modalImage) return;
-        const currentIndex = filteredItems.findIndex(item => item.id === modalImage.id || item.file === modalImage.file);
-        if (currentIndex === -1) return;
-
-        const newIndex = currentIndex + direction;
-        if (newIndex >= 0 && newIndex < filteredItems.length) {
-            setModalLoading(true);
-            setModalImage(filteredItems[newIndex]);
-        }
-    }
+    const visibleItems = filteredItems.slice(0, visibleCount);
+    const hasMore = visibleCount < filteredItems.length;
 
     function handleShowMore() {
         setVisibleCount(prev => prev + ITEMS_PER_PAGE);
@@ -153,23 +105,24 @@ export default function PortfolioGallery() {
                 justifyContent: 'center',
                 marginBottom: '2rem'
             }}>
-                {Object.entries(categoryNames).map(([key, name]) => (
+                {/* "Toutes" button first, then dynamic categories */}
+                {[{ id: 'all', name: 'Toutes' }, ...categories].map((cat) => (
                     <button
-                        key={key}
-                        className={`portfolio-filter ${filter === key ? 'active' : ''}`}
-                        onClick={() => setFilter(key)}
+                        key={cat.id}
+                        className={`portfolio-filter ${filter === cat.id ? 'active' : ''}`}
+                        onClick={() => setFilter(cat.id)}
                         style={{
                             padding: '0.5rem 1.25rem',
-                            border: filter === key ? '1px solid #C9A962' : '1px solid #333',
+                            border: filter === cat.id ? '1px solid #C9A962' : '1px solid #333',
                             borderRadius: '999px',
-                            background: filter === key ? '#C9A962' : 'transparent',
-                            color: filter === key ? '#1A1A1A' : '#fff',
+                            background: filter === cat.id ? '#C9A962' : 'transparent',
+                            color: filter === cat.id ? '#1A1A1A' : '#fff',
                             cursor: 'pointer',
                             fontSize: '0.875rem',
                             transition: 'all 0.3s ease',
                         }}
                     >
-                        {name}
+                        {cat.name}
                     </button>
                 ))}
             </nav>
@@ -181,7 +134,7 @@ export default function PortfolioGallery() {
                 gap: '1rem',
             }}>
                 {loading ? (
-                    <PortfolioSkeleton />
+                    <p style={{ textAlign: 'center', padding: '2rem', gridColumn: '1 / -1' }}>Chargement...</p>
                 ) : visibleItems.length === 0 ? (
                     <p style={{ textAlign: 'center', padding: '2rem', gridColumn: '1 / -1' }}>Aucune œuvre dans cette catégorie</p>
                 ) : (
@@ -273,9 +226,6 @@ export default function PortfolioGallery() {
                 <div
                     className="modal-overlay"
                     onClick={() => setModalImage(null)}
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
                     style={{
                         position: 'fixed',
                         top: 0,
@@ -288,7 +238,6 @@ export default function PortfolioGallery() {
                         justifyContent: 'center',
                         zIndex: 9999,
                         cursor: 'zoom-out',
-                        touchAction: 'pan-y',
                     }}
                 >
                     <button
@@ -307,66 +256,6 @@ export default function PortfolioGallery() {
                     >
                         ×
                     </button>
-
-                    {/* Image counter */}
-                    <div
-                        style={{
-                            position: 'absolute',
-                            top: '2rem',
-                            left: '2rem',
-                            color: 'rgba(255,255,255,0.7)',
-                            fontSize: '0.875rem',
-                            fontFamily: 'Inter, sans-serif',
-                            letterSpacing: '0.05em',
-                            zIndex: 10000,
-                        }}
-                    >
-                        {filteredItems.findIndex(item => item.id === modalImage.id || item.file === modalImage.file) + 1} / {filteredItems.length}
-                    </div>
-
-                    {/* Navigation arrows */}
-                    {filteredItems.findIndex(item => item.id === modalImage.id || item.file === modalImage.file) > 0 && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); navigateModal(-1); }}
-                            style={{
-                                position: 'absolute',
-                                left: '1rem',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                background: 'rgba(255,255,255,0.1)',
-                                border: 'none',
-                                color: '#fff',
-                                fontSize: '2rem',
-                                cursor: 'pointer',
-                                zIndex: 10000,
-                                padding: '1rem 1.5rem',
-                                borderRadius: '50%',
-                            }}
-                        >
-                            ‹
-                        </button>
-                    )}
-                    {filteredItems.findIndex(item => item.id === modalImage.id || item.file === modalImage.file) < filteredItems.length - 1 && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); navigateModal(1); }}
-                            style={{
-                                position: 'absolute',
-                                right: '1rem',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                background: 'rgba(255,255,255,0.1)',
-                                border: 'none',
-                                color: '#fff',
-                                fontSize: '2rem',
-                                cursor: 'pointer',
-                                zIndex: 10000,
-                                padding: '1rem 1.5rem',
-                                borderRadius: '50%',
-                            }}
-                        >
-                            ›
-                        </button>
-                    )}
                     <div
                         style={{
                             maxWidth: '90vw',
@@ -374,33 +263,17 @@ export default function PortfolioGallery() {
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
-                            position: 'relative',
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {modalLoading && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)',
-                                color: '#C9A962',
-                                fontSize: '1.5rem',
-                            }}>
-                                ⏳
-                            </div>
-                        )}
                         <img
                             src={getImageUrl(modalImage.file, 'full')}
                             alt={modalImage.title}
-                            onLoad={() => setModalLoading(false)}
                             style={{
                                 maxWidth: '100%',
                                 maxHeight: '80vh',
                                 objectFit: 'contain',
                                 borderRadius: '4px',
-                                opacity: modalLoading ? 0.3 : 1,
-                                transition: 'opacity 0.3s ease',
                             }}
                         />
                         <div style={{

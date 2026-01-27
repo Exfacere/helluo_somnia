@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // Initialize Redis client
 const redis = new Redis({
@@ -78,7 +86,7 @@ export async function DELETE(request: NextRequest) {
 
         // Get existing items
         const items = await redis.get<any[]>(PORTFOLIO_KEY) || [];
-        let deletedItem: any = null;
+        let itemToDelete: any = null;
 
         if (indexStr !== null) {
             // Delete by index
@@ -86,7 +94,7 @@ export async function DELETE(request: NextRequest) {
             if (isNaN(index) || index < 0 || index >= items.length) {
                 return NextResponse.json({ error: 'Invalid index' }, { status: 400 });
             }
-            deletedItem = items[index];
+            itemToDelete = items[index];
             items.splice(index, 1);
         } else if (id) {
             // Delete by ID
@@ -94,51 +102,27 @@ export async function DELETE(request: NextRequest) {
             if (itemIndex === -1) {
                 return NextResponse.json({ error: 'Item not found' }, { status: 404 });
             }
-            deletedItem = items[itemIndex];
+            itemToDelete = items[itemIndex];
             items.splice(itemIndex, 1);
         } else {
             return NextResponse.json({ error: 'Missing item ID or index' }, { status: 400 });
         }
 
-        // Delete from Cloudinary if public_id exists
-        if (deletedItem?.public_id) {
+        // Delete image from Cloudinary if public_id exists
+        if (itemToDelete?.public_id) {
             try {
-                const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-                const apiKey = process.env.CLOUDINARY_API_KEY;
-                const apiSecret = process.env.CLOUDINARY_API_SECRET;
-
-                const timestamp = Math.round(Date.now() / 1000);
-                const signatureString = `public_id=${deletedItem.public_id}&timestamp=${timestamp}${apiSecret}`;
-
-                // Create SHA1 signature
-                const encoder = new TextEncoder();
-                const data = encoder.encode(signatureString);
-                const hashBuffer = await crypto.subtle.digest('SHA-1', data);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-                const formData = new FormData();
-                formData.append('public_id', deletedItem.public_id);
-                formData.append('timestamp', timestamp.toString());
-                formData.append('api_key', apiKey!);
-                formData.append('signature', signature);
-
-                await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                console.log('Image deleted from Cloudinary:', deletedItem.public_id);
+                await cloudinary.uploader.destroy(itemToDelete.public_id);
+                console.log(`Deleted Cloudinary image: ${itemToDelete.public_id}`);
             } catch (cloudinaryError) {
-                console.error('Error deleting from Cloudinary:', cloudinaryError);
-                // Continue even if Cloudinary deletion fails
+                console.error('Failed to delete Cloudinary image:', cloudinaryError);
+                // Continue with deletion even if Cloudinary fails
             }
         }
 
         // Save back to Redis
         await redis.set(PORTFOLIO_KEY, items);
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, deletedCloudinaryImage: !!itemToDelete?.public_id });
     } catch (error) {
         console.error('Error deleting item:', error);
         return NextResponse.json({ error: 'Failed to delete item' }, { status: 500 });
