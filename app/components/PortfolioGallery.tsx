@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import PortfolioSkeleton from './PortfolioSkeleton';
 
 interface PortfolioItem {
     id?: string;
@@ -95,6 +96,10 @@ export default function PortfolioGallery() {
         setVisibleCount(prev => prev + ITEMS_PER_PAGE);
     }
 
+    if (loading) {
+        return <PortfolioSkeleton />;
+    }
+
     return (
         <div>
             {/* Filters */}
@@ -133,9 +138,7 @@ export default function PortfolioGallery() {
                 gridTemplateColumns: 'repeat(3, 1fr)',
                 gap: '1rem',
             }}>
-                {loading ? (
-                    <p style={{ textAlign: 'center', padding: '2rem', gridColumn: '1 / -1' }}>Chargement...</p>
-                ) : visibleItems.length === 0 ? (
+                {visibleItems.length === 0 ? (
                     <p style={{ textAlign: 'center', padding: '2rem', gridColumn: '1 / -1' }}>Aucune œuvre dans cette catégorie</p>
                 ) : (
                     visibleItems.map((item, i) => (
