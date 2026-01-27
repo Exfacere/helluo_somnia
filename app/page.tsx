@@ -148,8 +148,39 @@ export default function HomePage() {
 
             {/* Footer */}
             <footer className="footer">
-                <div className="container">
-                    <p>© 2025 Helluo_Somnia — Tous droits réservés</p>
+                <div className="container" style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '1rem'
+                }}>
+                    <div style={{ display: 'flex', gap: '1.5rem' }}>
+                        <a
+                            href="https://instagram.com/helluo_somnia"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                                color: '#C9A962',
+                                fontSize: '1.5rem',
+                                transition: 'transform 0.3s ease',
+                            }}
+                            aria-label="Instagram"
+                        >
+                            📷
+                        </a>
+                        <a
+                            href="mailto:contact@helluo-somnia.art"
+                            style={{
+                                color: '#C9A962',
+                                fontSize: '1.5rem',
+                                transition: 'transform 0.3s ease',
+                            }}
+                            aria-label="Email"
+                        >
+                            ✉️
+                        </a>
+                    </div>
+                    <p>© {new Date().getFullYear()} Helluo_Somnia — Tous droits réservés</p>
                 </div>
             </footer>
 
