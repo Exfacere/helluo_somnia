@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import PortfolioGallery from './components/PortfolioGallery';
+import ExhibitionsTimeline from './components/ExhibitionsTimeline';
 
 export default function HomePage() {
     const [isLoaded, setIsLoaded] = useState(false);
@@ -90,36 +91,13 @@ export default function HomePage() {
                     </div>
                 </section>
 
-                {/* Exhibitions Section */}
+                {/* Exhibitions Section - Dynamic */}
                 <section id="exhibitions" className="exhibitions section-alt">
                     <div className="container">
                         <header className="section-header">
                             <h2 className="section-title">Expositions</h2>
                         </header>
-                        <div className="timeline" id="exhibition-timeline">
-                            <article className="timeline-item visible">
-                                <span className="timeline-year">2026</span>
-                                <div className="timeline-content">
-                                    <h3 className="timeline-title">Silhouettes et Silences</h3>
-                                    <div className="timeline-meta">
-                                        <span>📍 Halle des Arts</span>
-                                        <span>🏙️ Bordeaux</span>
-                                    </div>
-                                    <p>10 février 2026 — 15 mars 2026</p>
-                                </div>
-                            </article>
-                            <article className="timeline-item visible">
-                                <span className="timeline-year">2025</span>
-                                <div className="timeline-content">
-                                    <h3 className="timeline-title">Nocturnes d&apos;Encre</h3>
-                                    <div className="timeline-meta">
-                                        <span>📍 Galerie Raven</span>
-                                        <span>🏙️ Paris</span>
-                                    </div>
-                                    <p>12 septembre 2025 — 20 octobre 2025</p>
-                                </div>
-                            </article>
-                        </div>
+                        <ExhibitionsTimeline />
                     </div>
                 </section>
 

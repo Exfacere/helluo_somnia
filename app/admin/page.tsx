@@ -10,6 +10,19 @@ interface PortfolioItem {
     public_id?: string;
 }
 
+interface Exhibition {
+    id: string;
+    title: string;
+    location: string;
+    city: string;
+    startDate: string;
+    endDate?: string;
+    description?: string;
+    image?: string;
+    public_id?: string;
+    createdAt: string;
+}
+
 const categoryNames: Record<string, string> = {
     pyro: 'Pyrogravure',
     peinture: 'Peinture',
@@ -37,20 +50,35 @@ export default function AdminPage() {
     const [success, setSuccess] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Form state
+    // Active tab state
+    const [activeTab, setActiveTab] = useState<'portfolio' | 'exhibitions'>('portfolio');
+
+    // Form state for portfolio
     const [title, setTitle] = useState('');
     const [category, setCategory] = useState('');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
 
-    // Edit state
+    // Edit state for portfolio
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editingTitle, setEditingTitle] = useState('');
 
-    // Load items
+    // Exhibitions state
+    const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
+    const [exhibitionsLoading, setExhibitionsLoading] = useState(false);
+    const [exhTitle, setExhTitle] = useState('');
+    const [exhLocation, setExhLocation] = useState('');
+    const [exhCity, setExhCity] = useState('');
+    const [exhStartDate, setExhStartDate] = useState('');
+    const [exhEndDate, setExhEndDate] = useState('');
+    const [exhDescription, setExhDescription] = useState('');
+    const [editingExhibition, setEditingExhibition] = useState<string | null>(null);
+
+    // Load items when authenticated
     useEffect(() => {
         if (isAuthenticated) {
             loadItems();
+            loadExhibitions();
         }
     }, [isAuthenticated]);
 
@@ -64,6 +92,87 @@ export default function AdminPage() {
             setError('Erreur de chargement');
         }
         setLoading(false);
+    }
+
+    async function loadExhibitions() {
+        setExhibitionsLoading(true);
+        try {
+            const res = await fetch('/api/exhibitions');
+            const data = await res.json();
+            setExhibitions(data.items || []);
+        } catch (err) {
+            setError('Erreur de chargement des expositions');
+        }
+        setExhibitionsLoading(false);
+    }
+
+    async function handleAddExhibition(e: FormEvent) {
+        e.preventDefault();
+        setError('');
+        setSuccess('');
+
+        if (!exhTitle || !exhLocation || !exhCity || !exhStartDate) {
+            setError('Veuillez remplir tous les champs obligatoires');
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const res = await fetch('/api/exhibitions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    title: exhTitle,
+                    location: exhLocation,
+                    city: exhCity,
+                    startDate: exhStartDate,
+                    endDate: exhEndDate || undefined,
+                    description: exhDescription || undefined,
+                }),
+            });
+
+            if (!res.ok) throw new Error('Failed to add exhibition');
+
+            setSuccess('Exposition ajoutée !');
+            setTimeout(() => setSuccess(''), 3000);
+
+            // Reset form
+            setExhTitle('');
+            setExhLocation('');
+            setExhCity('');
+            setExhStartDate('');
+            setExhEndDate('');
+            setExhDescription('');
+
+            loadExhibitions();
+        } catch (err) {
+            setError('Erreur lors de l\'ajout de l\'exposition');
+        }
+        setUploading(false);
+    }
+
+    async function handleDeleteExhibition(id: string) {
+        if (!confirm('Supprimer cette exposition ?')) return;
+
+        try {
+            const res = await fetch(`/api/exhibitions?id=${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                },
+            });
+
+            if (!res.ok) throw new Error('Delete failed');
+
+            setSuccess('Exposition supprimée !');
+            setTimeout(() => setSuccess(''), 3000);
+            loadExhibitions();
+        } catch (err) {
+            setError('Erreur lors de la suppression');
+        }
     }
 
     const [loginLoading, setLoginLoading] = useState(false);
@@ -277,197 +386,378 @@ export default function AdminPage() {
                 <a href="/" style={styles.headerLink}>← Retour au site</a>
             </header>
 
-            <div style={styles.content}>
-                {/* Works List */}
-                <div style={styles.card}>
-                    <div style={styles.cardHeader}>
-                        <h2 style={styles.cardTitle}>Œuvres</h2>
-                        <span style={styles.count}>{items.length} œuvres</span>
-                    </div>
+            {/* Tabs */}
+            <div style={styles.tabs}>
+                <button
+                    onClick={() => setActiveTab('portfolio')}
+                    style={{
+                        ...styles.tab,
+                        ...(activeTab === 'portfolio' ? styles.tabActive : {}),
+                    }}
+                >
+                    Portfolio
+                </button>
+                <button
+                    onClick={() => setActiveTab('exhibitions')}
+                    style={{
+                        ...styles.tab,
+                        ...(activeTab === 'exhibitions' ? styles.tabActive : {}),
+                    }}
+                >
+                    Expositions
+                </button>
+            </div>
 
-                    {/* Filters */}
-                    <div style={styles.filters}>
-                        {['all', 'pyro', 'peinture', 'collage', 'gravure', 'divers'].map(f => (
-                            <button
-                                key={f}
-                                onClick={() => setFilter(f)}
-                                style={{
-                                    ...styles.filterBtn,
-                                    ...(filter === f ? styles.filterActive : {}),
-                                }}
-                            >
-                                {f === 'all' ? 'Toutes' : categoryNames[f]}
-                            </button>
-                        ))}
-                    </div>
+            {/* Portfolio Tab Content */}
+            {activeTab === 'portfolio' && (
+                <div style={styles.content}>
+                    {/* Works List */}
+                    <div style={styles.card}>
+                        <div style={styles.cardHeader}>
+                            <h2 style={styles.cardTitle}>Œuvres</h2>
+                            <span style={styles.count}>{items.length} œuvres</span>
+                        </div>
 
-                    {/* Grid */}
-                    <div style={styles.grid}>
-                        {loading ? (
-                            <p>Chargement...</p>
-                        ) : filteredItems.length === 0 ? (
-                            <p>Aucune œuvre</p>
-                        ) : (
-                            filteredItems.map((item, i) => {
-                                // Find actual index in full items array
-                                const actualIndex = items.indexOf(item);
-                                return (
-                                    <div key={actualIndex} style={styles.item}>
-                                        <img
-                                            src={getImageUrl(item.file)}
-                                            alt={item.title}
-                                            style={styles.itemImage}
-                                        />
-                                        <div style={styles.itemOverlay}>
-                                            {editingIndex === actualIndex ? (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                    <input
-                                                        type="text"
-                                                        value={editingTitle}
-                                                        onChange={(e) => setEditingTitle(e.target.value)}
-                                                        style={{
-                                                            padding: '0.25rem 0.5rem',
-                                                            fontSize: '0.75rem',
-                                                            borderRadius: '4px',
-                                                            border: 'none',
-                                                        }}
-                                                        autoFocus
-                                                    />
-                                                    <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                                        <button
-                                                            onClick={() => handleSaveEdit(actualIndex)}
+                        {/* Filters */}
+                        <div style={styles.filters}>
+                            {['all', 'pyro', 'peinture', 'collage', 'gravure', 'divers'].map(f => (
+                                <button
+                                    key={f}
+                                    onClick={() => setFilter(f)}
+                                    style={{
+                                        ...styles.filterBtn,
+                                        ...(filter === f ? styles.filterActive : {}),
+                                    }}
+                                >
+                                    {f === 'all' ? 'Toutes' : categoryNames[f]}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Grid */}
+                        <div style={styles.grid}>
+                            {loading ? (
+                                <p>Chargement...</p>
+                            ) : filteredItems.length === 0 ? (
+                                <p>Aucune œuvre</p>
+                            ) : (
+                                filteredItems.map((item, i) => {
+                                    // Find actual index in full items array
+                                    const actualIndex = items.indexOf(item);
+                                    return (
+                                        <div key={actualIndex} style={styles.item}>
+                                            <img
+                                                src={getImageUrl(item.file)}
+                                                alt={item.title}
+                                                style={styles.itemImage}
+                                            />
+                                            <div style={styles.itemOverlay}>
+                                                {editingIndex === actualIndex ? (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                        <input
+                                                            type="text"
+                                                            value={editingTitle}
+                                                            onChange={(e) => setEditingTitle(e.target.value)}
                                                             style={{
                                                                 padding: '0.25rem 0.5rem',
-                                                                fontSize: '0.65rem',
-                                                                background: '#28a745',
-                                                                color: '#fff',
-                                                                border: 'none',
+                                                                fontSize: '0.75rem',
                                                                 borderRadius: '4px',
-                                                                cursor: 'pointer',
-                                                            }}
-                                                        >
-                                                            ✓
-                                                        </button>
-                                                        <button
-                                                            onClick={cancelEditing}
-                                                            style={{
-                                                                padding: '0.25rem 0.5rem',
-                                                                fontSize: '0.65rem',
-                                                                background: '#6c757d',
-                                                                color: '#fff',
                                                                 border: 'none',
-                                                                borderRadius: '4px',
-                                                                cursor: 'pointer',
                                                             }}
-                                                        >
-                                                            ✗
-                                                        </button>
+                                                            autoFocus
+                                                        />
+                                                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                            <button
+                                                                onClick={() => handleSaveEdit(actualIndex)}
+                                                                style={{
+                                                                    padding: '0.25rem 0.5rem',
+                                                                    fontSize: '0.65rem',
+                                                                    background: '#28a745',
+                                                                    color: '#fff',
+                                                                    border: 'none',
+                                                                    borderRadius: '4px',
+                                                                    cursor: 'pointer',
+                                                                }}
+                                                            >
+                                                                ✓
+                                                            </button>
+                                                            <button
+                                                                onClick={cancelEditing}
+                                                                style={{
+                                                                    padding: '0.25rem 0.5rem',
+                                                                    fontSize: '0.65rem',
+                                                                    background: '#6c757d',
+                                                                    color: '#fff',
+                                                                    border: 'none',
+                                                                    borderRadius: '4px',
+                                                                    cursor: 'pointer',
+                                                                }}
+                                                            >
+                                                                ✗
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ) : (
+                                                ) : (
+                                                    <>
+                                                        <span style={styles.itemTitle}>{item.title}</span>
+                                                        <span style={styles.itemCategory}>
+                                                            {categoryNames[item.category] || item.category}
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
+                                            {editingIndex !== actualIndex && (
                                                 <>
-                                                    <span style={styles.itemTitle}>{item.title}</span>
-                                                    <span style={styles.itemCategory}>
-                                                        {categoryNames[item.category] || item.category}
-                                                    </span>
+                                                    <button
+                                                        onClick={() => startEditing(actualIndex, item.title)}
+                                                        style={{
+                                                            ...styles.deleteBtn,
+                                                            background: '#007bff',
+                                                            top: '0.5rem',
+                                                            right: '2.5rem',
+                                                        }}
+                                                    >
+                                                        ✎
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(actualIndex)}
+                                                        style={styles.deleteBtn}
+                                                    >
+                                                        ×
+                                                    </button>
                                                 </>
                                             )}
                                         </div>
-                                        {editingIndex !== actualIndex && (
-                                            <>
-                                                <button
-                                                    onClick={() => startEditing(actualIndex, item.title)}
-                                                    style={{
-                                                        ...styles.deleteBtn,
-                                                        background: '#007bff',
-                                                        top: '0.5rem',
-                                                        right: '2.5rem',
-                                                    }}
-                                                >
-                                                    ✎
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(actualIndex)}
-                                                    style={styles.deleteBtn}
-                                                >
-                                                    ×
-                                                </button>
-                                            </>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Add Form */}
+                    <div style={styles.sidebar}>
+                        <div style={styles.card}>
+                            <div style={styles.cardHeader}>
+                                <h2 style={styles.cardTitle}>Ajouter une œuvre</h2>
+                            </div>
+                            <div style={styles.cardBody}>
+                                {error && <div style={styles.alertError}>{error}</div>}
+                                {success && <div style={styles.alertSuccess}>{success}</div>}
+
+                                <form onSubmit={handleSubmit}>
+                                    <div style={styles.formGroup}>
+                                        <label style={styles.label}>Image</label>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleFileChange}
+                                            ref={fileInputRef}
+                                            style={styles.input}
+                                        />
+                                        {preview && (
+                                            <img src={preview} alt="Aperçu" style={styles.preview} />
                                         )}
                                     </div>
-                                );
-                            })
-                        )}
+
+                                    <div style={styles.formGroup}>
+                                        <label style={styles.label}>Titre</label>
+                                        <input
+                                            type="text"
+                                            value={title}
+                                            onChange={(e) => setTitle(e.target.value)}
+                                            placeholder="Titre de l'œuvre"
+                                            style={styles.input}
+                                        />
+                                    </div>
+
+                                    <div style={styles.formGroup}>
+                                        <label style={styles.label}>Catégorie</label>
+                                        <select
+                                            value={category}
+                                            onChange={(e) => setCategory(e.target.value)}
+                                            style={styles.input}
+                                        >
+                                            <option value="">Choisir...</option>
+                                            <option value="pyro">Pyrogravure</option>
+                                            <option value="peinture">Peinture</option>
+                                            <option value="collage">Collage</option>
+                                            <option value="gravure">Gravure</option>
+                                            <option value="divers">Divers</option>
+                                        </select>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={uploading}
+                                        style={{
+                                            ...styles.submitBtn,
+                                            opacity: uploading ? 0.7 : 1,
+                                        }}
+                                    >
+                                        {uploading ? 'Upload en cours...' : '+ Ajouter l\'œuvre'}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            )}
 
-                {/* Add Form */}
-                <div style={styles.sidebar}>
-                    <div style={styles.card}>
-                        <div style={styles.cardHeader}>
-                            <h2 style={styles.cardTitle}>Ajouter une œuvre</h2>
-                        </div>
-                        <div style={styles.cardBody}>
-                            {error && <div style={styles.alertError}>{error}</div>}
-                            {success && <div style={styles.alertSuccess}>{success}</div>}
+            {/* Exhibitions Tab Content */}
+            {activeTab === 'exhibitions' && (
+                <div style={styles.content}>
+            {/* Exhibitions List */}
+            <div style={styles.card}>
+                <div style={styles.cardHeader}>
+                    <h2 style={styles.cardTitle}>Expositions</h2>
+                    <span style={styles.count}>{exhibitions.length} expositions</span>
+                </div>
 
-                            <form onSubmit={handleSubmit}>
-                                <div style={styles.formGroup}>
-                                    <label style={styles.label}>Image</label>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleFileChange}
-                                        ref={fileInputRef}
-                                        style={styles.input}
-                                    />
-                                    {preview && (
-                                        <img src={preview} alt="Aperçu" style={styles.preview} />
-                                    )}
-                                </div>
-
-                                <div style={styles.formGroup}>
-                                    <label style={styles.label}>Titre</label>
-                                    <input
-                                        type="text"
-                                        value={title}
-                                        onChange={(e) => setTitle(e.target.value)}
-                                        placeholder="Titre de l'œuvre"
-                                        style={styles.input}
-                                    />
-                                </div>
-
-                                <div style={styles.formGroup}>
-                                    <label style={styles.label}>Catégorie</label>
-                                    <select
-                                        value={category}
-                                        onChange={(e) => setCategory(e.target.value)}
-                                        style={styles.input}
-                                    >
-                                        <option value="">Choisir...</option>
-                                        <option value="pyro">Pyrogravure</option>
-                                        <option value="peinture">Peinture</option>
-                                        <option value="collage">Collage</option>
-                                        <option value="gravure">Gravure</option>
-                                        <option value="divers">Divers</option>
-                                    </select>
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={uploading}
+                <div style={{ padding: '1rem' }}>
+                    {exhibitionsLoading ? (
+                        <p>Chargement...</p>
+                    ) : exhibitions.length === 0 ? (
+                        <p style={{ color: '#666', fontStyle: 'italic' }}>Aucune exposition pour le moment</p>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {exhibitions.map((exh) => (
+                                <div
+                                    key={exh.id}
                                     style={{
-                                        ...styles.submitBtn,
-                                        opacity: uploading ? 0.7 : 1,
+                                        background: '#f9f9f9',
+                                        padding: '1rem',
+                                        borderRadius: '8px',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'flex-start',
                                     }}
                                 >
-                                    {uploading ? 'Upload en cours...' : '+ Ajouter l\'œuvre'}
-                                </button>
-                            </form>
+                                    <div>
+                                        <h3 style={{ margin: '0 0 0.25rem', fontWeight: 600, fontSize: '1rem' }}>{exh.title}</h3>
+                                        <p style={{ margin: '0 0 0.25rem', color: '#666', fontSize: '0.875rem' }}>
+                                            📍 {exh.location}, {exh.city}
+                                        </p>
+                                        <p style={{ margin: '0', color: '#C9A962', fontSize: '0.75rem' }}>
+                                            📅 {new Date(exh.startDate).toLocaleDateString('fr-FR')}
+                                            {exh.endDate && ` - ${new Date(exh.endDate).toLocaleDateString('fr-FR')}`}
+                                        </p>
+                                        {exh.description && (
+                                            <p style={{ margin: '0.5rem 0 0', color: '#444', fontSize: '0.875rem' }}>{exh.description}</p>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => handleDeleteExhibition(exh.id)}
+                                        style={{
+                                            background: '#DC3545',
+                                            color: '#fff',
+                                            border: 'none',
+                                            borderRadius: '50%',
+                                            width: '28px',
+                                            height: '28px',
+                                            cursor: 'pointer',
+                                            fontSize: '1rem',
+                                        }}
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            ))}
                         </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Add Exhibition Form */}
+            <div style={styles.sidebar}>
+                <div style={styles.card}>
+                    <div style={styles.cardHeader}>
+                        <h2 style={styles.cardTitle}>Ajouter une exposition</h2>
+                    </div>
+                    <div style={styles.cardBody}>
+                        {error && <div style={styles.alertError}>{error}</div>}
+                        {success && <div style={styles.alertSuccess}>{success}</div>}
+
+                        <form onSubmit={handleAddExhibition}>
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Titre *</label>
+                                <input
+                                    type="text"
+                                    value={exhTitle}
+                                    onChange={(e) => setExhTitle(e.target.value)}
+                                    placeholder="Nom de l'exposition"
+                                    style={styles.input}
+                                />
+                            </div>
+
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Lieu *</label>
+                                <input
+                                    type="text"
+                                    value={exhLocation}
+                                    onChange={(e) => setExhLocation(e.target.value)}
+                                    placeholder="Galerie, musée, etc."
+                                    style={styles.input}
+                                />
+                            </div>
+
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Ville *</label>
+                                <input
+                                    type="text"
+                                    value={exhCity}
+                                    onChange={(e) => setExhCity(e.target.value)}
+                                    placeholder="Paris, Lyon, etc."
+                                    style={styles.input}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <div style={{ ...styles.formGroup, flex: 1 }}>
+                                    <label style={styles.label}>Début *</label>
+                                    <input
+                                        type="date"
+                                        value={exhStartDate}
+                                        onChange={(e) => setExhStartDate(e.target.value)}
+                                        style={styles.input}
+                                    />
+                                </div>
+                                <div style={{ ...styles.formGroup, flex: 1 }}>
+                                    <label style={styles.label}>Fin</label>
+                                    <input
+                                        type="date"
+                                        value={exhEndDate}
+                                        onChange={(e) => setExhEndDate(e.target.value)}
+                                        style={styles.input}
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Description</label>
+                                <textarea
+                                    value={exhDescription}
+                                    onChange={(e) => setExhDescription(e.target.value)}
+                                    placeholder="Détails optionnels..."
+                                    style={{ ...styles.input, minHeight: '80px', resize: 'vertical' }}
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={uploading}
+                                style={{
+                                    ...styles.submitBtn,
+                                    opacity: uploading ? 0.7 : 1,
+                                }}
+                            >
+                                {uploading ? 'Ajout en cours...' : '+ Ajouter l\'exposition'}
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
+        </div>
+            )}
         </div>
     );
 }
