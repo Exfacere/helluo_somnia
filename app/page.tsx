@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import PortfolioGallery from './components/PortfolioGallery';
 import ExhibitionsTimeline from './components/ExhibitionsTimeline';
+import BackToTop from './components/BackToTop';
 import { useScrollAnimations } from './hooks/useScrollAnimations';
 
 export default function HomePage() {
@@ -151,6 +152,9 @@ export default function HomePage() {
                     <p>© 2025 Helluo_Somnia — Tous droits réservés</p>
                 </div>
             </footer>
+
+            {/* Back to Top Button */}
+            <BackToTop />
         </>
     );
 }

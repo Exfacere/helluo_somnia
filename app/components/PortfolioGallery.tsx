@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import PortfolioSkeleton from './PortfolioSkeleton';
 
 interface PortfolioItem {
     id?: string;
@@ -150,7 +151,7 @@ export default function PortfolioGallery() {
                 gap: '1rem',
             }}>
                 {loading ? (
-                    <p style={{ textAlign: 'center', padding: '2rem', gridColumn: '1 / -1' }}>Chargement...</p>
+                    <PortfolioSkeleton />
                 ) : visibleItems.length === 0 ? (
                     <p style={{ textAlign: 'center', padding: '2rem', gridColumn: '1 / -1' }}>Aucune œuvre dans cette catégorie</p>
                 ) : (
