@@ -66,17 +66,47 @@ export default function PortfolioGallery() {
         setLoading(false);
     }
 
-    // Reset visible count when filter changes
-    useEffect(() => {
-        setVisibleCount(ITEMS_PER_PAGE);
-    }, [filter]);
-
+    // Compute filtered items
     const filteredItems = filter === 'all'
         ? items
         : items.filter(item => item.category === filter);
 
     const visibleItems = filteredItems.slice(0, visibleCount);
     const hasMore = visibleCount < filteredItems.length;
+
+    // Reset visible count when filter changes
+    useEffect(() => {
+        setVisibleCount(ITEMS_PER_PAGE);
+    }, [filter]);
+
+    // Keyboard navigation for modal
+    useEffect(() => {
+        if (!modalImage) return;
+
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === 'Escape') {
+                setModalImage(null);
+            } else if (e.key === 'ArrowLeft') {
+                navigateModal(-1);
+            } else if (e.key === 'ArrowRight') {
+                navigateModal(1);
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [modalImage, filteredItems]);
+
+    function navigateModal(direction: number) {
+        if (!modalImage) return;
+        const currentIndex = filteredItems.findIndex(item => item.id === modalImage.id || item.file === modalImage.file);
+        if (currentIndex === -1) return;
+
+        const newIndex = currentIndex + direction;
+        if (newIndex >= 0 && newIndex < filteredItems.length) {
+            setModalImage(filteredItems[newIndex]);
+        }
+    }
 
     function handleShowMore() {
         setVisibleCount(prev => prev + ITEMS_PER_PAGE);
@@ -242,6 +272,50 @@ export default function PortfolioGallery() {
                     >
                         ×
                     </button>
+
+                    {/* Navigation arrows */}
+                    {filteredItems.findIndex(item => item.id === modalImage.id || item.file === modalImage.file) > 0 && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); navigateModal(-1); }}
+                            style={{
+                                position: 'absolute',
+                                left: '1rem',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'rgba(255,255,255,0.1)',
+                                border: 'none',
+                                color: '#fff',
+                                fontSize: '2rem',
+                                cursor: 'pointer',
+                                zIndex: 10000,
+                                padding: '1rem 1.5rem',
+                                borderRadius: '50%',
+                            }}
+                        >
+                            ‹
+                        </button>
+                    )}
+                    {filteredItems.findIndex(item => item.id === modalImage.id || item.file === modalImage.file) < filteredItems.length - 1 && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); navigateModal(1); }}
+                            style={{
+                                position: 'absolute',
+                                right: '1rem',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'rgba(255,255,255,0.1)',
+                                border: 'none',
+                                color: '#fff',
+                                fontSize: '2rem',
+                                cursor: 'pointer',
+                                zIndex: 10000,
+                                padding: '1rem 1.5rem',
+                                borderRadius: '50%',
+                            }}
+                        >
+                            ›
+                        </button>
+                    )}
                     <div
                         style={{
                             maxWidth: '90vw',
