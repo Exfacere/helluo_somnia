@@ -3,10 +3,14 @@
 import { useEffect, useState } from 'react';
 import PortfolioGallery from './components/PortfolioGallery';
 import ExhibitionsTimeline from './components/ExhibitionsTimeline';
+import { useScrollAnimations } from './hooks/useScrollAnimations';
 
 export default function HomePage() {
     const [isLoaded, setIsLoaded] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+
+    // Initialize scroll animations
+    useScrollAnimations();
 
     useEffect(() => {
         // Show content immediately
