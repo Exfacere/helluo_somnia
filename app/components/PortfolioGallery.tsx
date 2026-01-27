@@ -43,6 +43,7 @@ export default function PortfolioGallery() {
     const [filter, setFilter] = useState('all');
     const [loading, setLoading] = useState(true);
     const [modalImage, setModalImage] = useState<PortfolioItem | null>(null);
+    const [modalLoading, setModalLoading] = useState(false);
     const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
 
     useEffect(() => {
@@ -133,6 +134,7 @@ export default function PortfolioGallery() {
 
         const newIndex = currentIndex + direction;
         if (newIndex >= 0 && newIndex < filteredItems.length) {
+            setModalLoading(true);
             setModalImage(filteredItems[newIndex]);
         }
     }
@@ -372,17 +374,33 @@ export default function PortfolioGallery() {
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
+                            position: 'relative',
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
+                        {modalLoading && (
+                            <div style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                color: '#C9A962',
+                                fontSize: '1.5rem',
+                            }}>
+                                ⏳
+                            </div>
+                        )}
                         <img
                             src={getImageUrl(modalImage.file, 'full')}
                             alt={modalImage.title}
+                            onLoad={() => setModalLoading(false)}
                             style={{
                                 maxWidth: '100%',
                                 maxHeight: '80vh',
                                 objectFit: 'contain',
                                 borderRadius: '4px',
+                                opacity: modalLoading ? 0.3 : 1,
+                                transition: 'opacity 0.3s ease',
                             }}
                         />
                         <div style={{
