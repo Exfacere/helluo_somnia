@@ -219,6 +219,28 @@ export default function CarnetsGallery() {
                 }
                 .flip-next { animation: flipNext 0.55s ease-in-out forwards; transform-origin: left center; }
                 .flip-prev { animation: flipPrev 0.55s ease-in-out forwards; transform-origin: right center; }
+                
+                /* Mobile slide animations */
+                @keyframes slideOutLeft {
+                    0% { transform: translateX(0); opacity: 1; }
+                    100% { transform: translateX(-100%); opacity: 0; }
+                }
+                @keyframes slideOutRight {
+                    0% { transform: translateX(0); opacity: 1; }
+                    100% { transform: translateX(100%); opacity: 0; }
+                }
+                @keyframes slideInLeft {
+                    0% { transform: translateX(100%); opacity: 0; }
+                    100% { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideInRight {
+                    0% { transform: translateX(-100%); opacity: 0; }
+                    100% { transform: translateX(0); opacity: 1; }
+                }
+                .slide-out-left { animation: slideOutLeft 0.4s ease-out forwards; }
+                .slide-out-right { animation: slideOutRight 0.4s ease-out forwards; }
+                .slide-in-left { animation: slideInLeft 0.4s ease-out forwards; }
+                .slide-in-right { animation: slideInRight 0.4s ease-out forwards; }
             `}</style>
 
             {/* Carnets Grid - Responsive */}
@@ -305,43 +327,41 @@ export default function CarnetsGallery() {
                                 style={{ position: 'absolute', left: '-55px', top: '50%', transform: 'translateY(-50%)', background: canGoBack && !isFlipping ? 'rgba(201, 169, 98, 0.15)' : 'transparent', border: canGoBack && !isFlipping ? '1px solid rgba(201, 169, 98, 0.4)' : '1px solid rgba(255,255,255,0.1)', color: canGoBack && !isFlipping ? '#C9A962' : '#333', width: 44, height: 44, borderRadius: '50%', fontSize: '1.25rem', cursor: canGoBack && !isFlipping ? 'pointer' : 'not-allowed', zIndex: 10 }}>←</button>
                         )}
 
-                        {/* Mobile: Single page view */}
+                        {/* Mobile: Single page view with slide animation */}
                         {isMobile ? (
-                            <div style={{ width: pageWidth, height: pageHeight, position: 'relative', transformStyle: 'preserve-3d' }}>
-                                {/* Base page */}
-                                <div style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    background: '#1a1714',
-                                    borderRadius: '8px',
-                                    overflow: 'hidden',
-                                    boxShadow: '0 4px 25px rgba(0,0,0,0.5)',
-                                    position: 'absolute'
-                                }}>
-                                    {isFlipping && flipDirection === 'next'
-                                        ? renderPage(targetSpread[1], 'right', !targetSpread[1])
-                                        : renderPage(displaySpread[1], 'right', !displaySpread[1])}
+                            <div style={{ width: pageWidth, height: pageHeight, position: 'relative', overflow: 'hidden' }}>
+                                {/* Current/Target page (slides in) */}
+                                <div
+                                    className={isFlipping ? (flipDirection === 'next' ? 'slide-in-left' : 'slide-in-right') : ''}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        background: '#1a1714',
+                                        borderRadius: '8px',
+                                        overflow: 'hidden',
+                                        boxShadow: '0 4px 25px rgba(0,0,0,0.5)',
+                                        position: 'absolute',
+                                    }}
+                                >
+                                    {renderPage(displaySpread[1], 'right', !displaySpread[1])}
                                 </div>
 
-                                {/* Flipping page */}
-                                {isFlipping && flipDirection === 'next' && (
-                                    <div className="flip-next" style={{ width: '100%', height: '100%', position: 'absolute', transformStyle: 'preserve-3d', zIndex: 10 }}>
-                                        <div style={{ width: '100%', height: '100%', position: 'absolute', backfaceVisibility: 'hidden', background: '#1a1714', borderRadius: '8px', overflow: 'hidden', boxShadow: '2px 0 15px rgba(0,0,0,0.3)' }}>
-                                            {renderPage(fromSpread[1], 'right')}
-                                        </div>
-                                        <div style={{ width: '100%', height: '100%', position: 'absolute', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', background: '#1a1714', borderRadius: '8px', overflow: 'hidden' }}>
-                                            {renderPage(targetSpread[1], 'right')}
-                                        </div>
-                                    </div>
-                                )}
-                                {isFlipping && flipDirection === 'prev' && (
-                                    <div className="flip-prev" style={{ width: '100%', height: '100%', position: 'absolute', transformStyle: 'preserve-3d', zIndex: 10 }}>
-                                        <div style={{ width: '100%', height: '100%', position: 'absolute', backfaceVisibility: 'hidden', background: '#1a1714', borderRadius: '8px', overflow: 'hidden', boxShadow: '-2px 0 15px rgba(0,0,0,0.3)' }}>
-                                            {renderPage(fromSpread[1], 'right')}
-                                        </div>
-                                        <div style={{ width: '100%', height: '100%', position: 'absolute', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', background: '#1a1714', borderRadius: '8px', overflow: 'hidden' }}>
-                                            {renderPage(targetSpread[1], 'right')}
-                                        </div>
+                                {/* Outgoing page (slides out) */}
+                                {isFlipping && (
+                                    <div
+                                        className={flipDirection === 'next' ? 'slide-out-left' : 'slide-out-right'}
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            position: 'absolute',
+                                            zIndex: 10,
+                                            background: '#1a1714',
+                                            borderRadius: '8px',
+                                            overflow: 'hidden',
+                                            boxShadow: '0 4px 25px rgba(0,0,0,0.5)',
+                                        }}
+                                    >
+                                        {renderPage(fromSpread[1], 'right')}
                                     </div>
                                 )}
                             </div>
