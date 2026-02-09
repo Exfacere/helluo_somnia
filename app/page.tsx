@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import PortfolioGallery from './components/PortfolioGallery';
+import CarnetsGallery from './components/CarnetsGallery';
 import ExhibitionsTimeline from './components/ExhibitionsTimeline';
 import ScrollAnimations from './components/ScrollAnimations';
 
@@ -37,6 +38,7 @@ export default function HomePage() {
                 <ul className={menuOpen ? 'open' : ''}>
                     <li><a href="#about" onClick={handleNavClick}>À propos</a></li>
                     <li><a href="#portfolio" onClick={handleNavClick}>Portfolio</a></li>
+                    <li><a href="#carnets" onClick={handleNavClick}>Carnets</a></li>
                     <li><a href="#exhibitions" onClick={handleNavClick}>Expositions</a></li>
                     <li><a href="#contact" onClick={handleNavClick}>Contact</a></li>
                 </ul>
@@ -90,6 +92,19 @@ export default function HomePage() {
                             <h2 className="section-title">Portfolio</h2>
                         </header>
                         <PortfolioGallery />
+                    </div>
+                </section>
+
+                {/* Carnets Section */}
+                <section id="carnets" className="carnets section-alt">
+                    <div className="container">
+                        <header className="section-header">
+                            <h2 className="section-title">Carnets</h2>
+                            <p style={{ color: '#888', marginTop: '0.5rem', maxWidth: 600, margin: '0.5rem auto 2rem' }}>
+                                Feuilletez mes carnets de croquis et d&apos;esquisses
+                            </p>
+                        </header>
+                        <CarnetsGallery />
                     </div>
                 </section>
 

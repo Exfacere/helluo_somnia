@@ -1,22 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Redis } from '@upstash/redis';
-
-// Initialize Redis client
-const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
-
-const CATEGORIES_KEY = 'portfolio:categories';
-
-// Default categories
-const DEFAULT_CATEGORIES = [
-    { id: 'pyro', name: 'Pyrogravures', order: 1 },
-    { id: 'peinture', name: 'Peintures', order: 2 },
-    { id: 'collage', name: 'Collages', order: 3 },
-    { id: 'gravure', name: 'Gravures', order: 4 },
-    { id: 'divers', name: 'Divers', order: 5 },
-];
+import { redis, KEYS } from '@/app/lib/redis';
+import { isAuthorized, unauthorized } from '@/app/lib/auth';
+import { categorySchema, categoryPatchSchema } from '@/app/lib/schemas';
 
 interface Category {
     id: string;
@@ -24,26 +9,26 @@ interface Category {
     order: number;
 }
 
-// Check authorization
-function isAuthorized(request: NextRequest): boolean {
-    const authHeader = request.headers.get('authorization');
-    return authHeader === `Bearer ${process.env.ADMIN_PASSWORD}`;
-}
+// Default categories
+const DEFAULT_CATEGORIES: Category[] = [
+    { id: 'pyro', name: 'Pyrogravures', order: 1 },
+    { id: 'peinture', name: 'Peintures', order: 2 },
+    { id: 'collage', name: 'Collages', order: 3 },
+    { id: 'gravure', name: 'Gravures', order: 4 },
+    { id: 'divers', name: 'Divers', order: 5 },
+];
 
 // GET - Retrieve all categories
 export async function GET() {
     try {
-        let categories = await redis.get<Category[]>(CATEGORIES_KEY);
+        let categories = await redis.get<Category[]>(KEYS.CATEGORIES);
 
-        // If no categories exist, initialize with defaults
         if (!categories || categories.length === 0) {
             categories = DEFAULT_CATEGORIES;
-            await redis.set(CATEGORIES_KEY, categories);
+            await redis.set(KEYS.CATEGORIES, categories);
         }
 
-        // Sort by order
         categories.sort((a, b) => a.order - b.order);
-
         return NextResponse.json({ categories });
     } catch (error) {
         console.error('Error reading categories:', error);
@@ -54,31 +39,24 @@ export async function GET() {
 // POST - Add a new category
 export async function POST(request: NextRequest) {
     if (!isAuthorized(request)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return unauthorized();
     }
 
     try {
         const body = await request.json();
-        const { id, name } = body;
+        const result = categorySchema.safeParse(body);
 
-        if (!id || !name) {
-            return NextResponse.json({ error: 'Missing required fields (id, name)' }, { status: 400 });
+        if (!result.success) {
+            return NextResponse.json({ error: result.error.flatten().fieldErrors }, { status: 400 });
         }
 
-        // Validate id format (lowercase, no spaces)
-        if (!/^[a-z0-9_-]+$/.test(id)) {
-            return NextResponse.json({ error: 'ID must be lowercase with no spaces (use - or _)' }, { status: 400 });
-        }
+        const { id, name } = result.data;
+        let categories = await redis.get<Category[]>(KEYS.CATEGORIES) || DEFAULT_CATEGORIES;
 
-        // Get existing categories
-        let categories = await redis.get<Category[]>(CATEGORIES_KEY) || DEFAULT_CATEGORIES;
-
-        // Check if id already exists
         if (categories.some(cat => cat.id === id)) {
             return NextResponse.json({ error: 'Category ID already exists' }, { status: 400 });
         }
 
-        // Add new category at the end
         const newCategory: Category = {
             id,
             name,
@@ -86,9 +64,7 @@ export async function POST(request: NextRequest) {
         };
 
         categories.push(newCategory);
-
-        // Save back to Redis
-        await redis.set(CATEGORIES_KEY, categories);
+        await redis.set(KEYS.CATEGORIES, categories);
 
         return NextResponse.json({ success: true, category: newCategory });
     } catch (error) {
@@ -100,7 +76,7 @@ export async function POST(request: NextRequest) {
 // DELETE - Remove a category
 export async function DELETE(request: NextRequest) {
     if (!isAuthorized(request)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return unauthorized();
     }
 
     try {
@@ -111,10 +87,7 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'Missing category ID' }, { status: 400 });
         }
 
-        // Get existing categories
-        let categories = await redis.get<Category[]>(CATEGORIES_KEY) || DEFAULT_CATEGORIES;
-
-        // Find and remove the category
+        let categories = await redis.get<Category[]>(KEYS.CATEGORIES) || DEFAULT_CATEGORIES;
         const initialLength = categories.length;
         categories = categories.filter(cat => cat.id !== id);
 
@@ -127,9 +100,7 @@ export async function DELETE(request: NextRequest) {
             cat.order = index + 1;
         });
 
-        // Save back to Redis
-        await redis.set(CATEGORIES_KEY, categories);
-
+        await redis.set(KEYS.CATEGORIES, categories);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Error deleting category:', error);
@@ -140,39 +111,34 @@ export async function DELETE(request: NextRequest) {
 // PATCH - Update a category (name or order)
 export async function PATCH(request: NextRequest) {
     if (!isAuthorized(request)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return unauthorized();
     }
 
     try {
         const body = await request.json();
-        const { id, name, order } = body;
+        const result = categoryPatchSchema.safeParse(body);
 
-        if (!id) {
-            return NextResponse.json({ error: 'Missing category ID' }, { status: 400 });
+        if (!result.success) {
+            return NextResponse.json({ error: result.error.flatten().fieldErrors }, { status: 400 });
         }
 
-        // Get existing categories
-        let categories = await redis.get<Category[]>(CATEGORIES_KEY) || DEFAULT_CATEGORIES;
+        const { id, name, order } = result.data;
+        let categories = await redis.get<Category[]>(KEYS.CATEGORIES) || DEFAULT_CATEGORIES;
 
-        // Find the category
         const categoryIndex = categories.findIndex(cat => cat.id === id);
         if (categoryIndex === -1) {
             return NextResponse.json({ error: 'Category not found' }, { status: 404 });
         }
 
-        // Update fields
         if (name) {
             categories[categoryIndex].name = name;
         }
         if (order !== undefined) {
             categories[categoryIndex].order = order;
-            // Re-sort by order
             categories.sort((a, b) => a.order - b.order);
         }
 
-        // Save back to Redis
-        await redis.set(CATEGORIES_KEY, categories);
-
+        await redis.set(KEYS.CATEGORIES, categories);
         return NextResponse.json({ success: true, category: categories[categoryIndex] });
     } catch (error) {
         console.error('Error updating category:', error);

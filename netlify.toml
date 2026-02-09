@@ -1,9 +1,7 @@
 [build]
   command = "npm run build"
-  publish = "public"
+  publish = ".next"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false
+# Netlify Next.js plugin handles API routes automatically
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

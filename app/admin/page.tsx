@@ -23,6 +23,21 @@ interface Exhibition {
     createdAt: string;
 }
 
+interface CarnetPage {
+    pageNumber: number;
+    url: string;
+    public_id: string;
+}
+
+interface Carnet {
+    id: string;
+    number: number;
+    title: string;
+    coverUrl: string;
+    pages: CarnetPage[];
+    createdAt: string;
+}
+
 const categoryNames: Record<string, string> = {
     pyro: 'Pyrogravure',
     peinture: 'Peinture',
@@ -51,7 +66,7 @@ export default function AdminPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Active tab state
-    const [activeTab, setActiveTab] = useState<'portfolio' | 'exhibitions' | 'categories'>('portfolio');
+    const [activeTab, setActiveTab] = useState<'portfolio' | 'exhibitions' | 'categories' | 'carnets'>('portfolio');
 
     // Form state for portfolio
     const [title, setTitle] = useState('');
@@ -80,12 +95,21 @@ export default function AdminPage() {
     const [newCatId, setNewCatId] = useState('');
     const [newCatName, setNewCatName] = useState('');
 
+    // Carnets state
+    const [carnets, setCarnets] = useState<Carnet[]>([]);
+    const [carnetsLoading, setCarnetsLoading] = useState(false);
+    const [carnetsUploading, setCarnetsUploading] = useState(false);
+    const [carnetFiles, setCarnetFiles] = useState<FileList | null>(null);
+    const [editingCarnetId, setEditingCarnetId] = useState<string | null>(null);
+    const [editingCarnetTitle, setEditingCarnetTitle] = useState('');
+
     // Load items when authenticated
     useEffect(() => {
         if (isAuthenticated) {
             loadItems();
             loadExhibitions();
             loadCategories();
+            loadCarnets();
         }
     }, [isAuthenticated]);
 
@@ -123,6 +147,106 @@ export default function AdminPage() {
             setError('Erreur de chargement des catégories');
         }
         setCategoriesLoading(false);
+    }
+
+    async function loadCarnets() {
+        setCarnetsLoading(true);
+        try {
+            const res = await fetch('/api/carnets');
+            const data = await res.json();
+            setCarnets(data.carnets || []);
+        } catch (err) {
+            setError('Erreur de chargement des carnets');
+        }
+        setCarnetsLoading(false);
+    }
+
+    async function handleUploadCarnets(e: FormEvent) {
+        e.preventDefault();
+        if (!carnetFiles || carnetFiles.length === 0) {
+            setError('Veuillez sélectionner des fichiers');
+            return;
+        }
+
+        setCarnetsUploading(true);
+        setError('');
+
+        try {
+            const formData = new FormData();
+            for (let i = 0; i < carnetFiles.length; i++) {
+                formData.append('files', carnetFiles[i]);
+            }
+
+            const res = await fetch('/api/carnets', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                },
+                body: formData,
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+            setSuccess(`${data.uploaded}/${data.total} fichiers uploadés !`);
+            setTimeout(() => setSuccess(''), 5000);
+            setCarnetFiles(null);
+            loadCarnets();
+        } catch (err: any) {
+            setError(err.message || 'Erreur lors de l\'upload');
+        }
+        setCarnetsUploading(false);
+    }
+
+    async function handleDeleteCarnet(carnetId: string, pageNumber?: number) {
+        const message = pageNumber !== undefined
+            ? 'Supprimer cette page ?'
+            : 'Supprimer ce carnet et toutes ses pages ?';
+        if (!confirm(message)) return;
+
+        try {
+            const url = pageNumber !== undefined
+                ? `/api/carnets?carnetId=${carnetId}&pageNumber=${pageNumber}`
+                : `/api/carnets?carnetId=${carnetId}`;
+
+            const res = await fetch(url, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${getToken()}` },
+            });
+
+            if (!res.ok) throw new Error('Delete failed');
+
+            setSuccess('Suppression effectuée !');
+            setTimeout(() => setSuccess(''), 3000);
+            loadCarnets();
+        } catch (err) {
+            setError('Erreur lors de la suppression');
+        }
+    }
+
+    async function handleUpdateCarnetTitle(carnetId: string) {
+        if (!editingCarnetTitle.trim()) return;
+
+        try {
+            const res = await fetch('/api/carnets', {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: carnetId, title: editingCarnetTitle.trim() }),
+            });
+
+            if (!res.ok) throw new Error('Update failed');
+
+            setSuccess('Titre modifié !');
+            setTimeout(() => setSuccess(''), 3000);
+            setEditingCarnetId(null);
+            setEditingCarnetTitle('');
+            loadCarnets();
+        } catch (err) {
+            setError('Erreur lors de la modification');
+        }
     }
 
     async function handleAddCategory(e: FormEvent) {
@@ -556,6 +680,15 @@ export default function AdminPage() {
                     }}
                 >
                     Catégories
+                </button>
+                <button
+                    onClick={() => setActiveTab('carnets')}
+                    style={{
+                        ...styles.tab,
+                        ...(activeTab === 'carnets' ? styles.tabActive : {}),
+                    }}
+                >
+                    Carnets
                 </button>
             </div>
 
@@ -1040,6 +1173,225 @@ export default function AdminPage() {
                                 </button>
                             </form>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Carnets Tab Content */}
+            {activeTab === 'carnets' && (
+                <div style={styles.content}>
+                    {/* Upload section */}
+                    <div style={styles.card}>
+                        <div style={styles.cardHeader}>
+                            <h2 style={styles.cardTitle}>Uploader des carnets</h2>
+                        </div>
+                        <form onSubmit={handleUploadCarnets} style={{ padding: '1.5rem' }}>
+                            <p style={{ marginBottom: '1rem', color: '#666', fontSize: '0.875rem' }}>
+                                Nommez vos fichiers au format <strong>C.X.Y</strong> (ex: C.1.1.jpg pour Carnet 1, Page 1).
+                                Les images seront automatiquement groupées par carnet.
+                            </p>
+                            <div style={styles.formGroup}>
+                                <input
+                                    type="file"
+                                    multiple
+                                    accept="image/*"
+                                    onChange={(e) => setCarnetFiles(e.target.files)}
+                                    style={styles.input}
+                                />
+                            </div>
+                            {carnetFiles && carnetFiles.length > 0 && (
+                                <p style={{ fontSize: '0.875rem', color: '#333', marginBottom: '1rem' }}>
+                                    {carnetFiles.length} fichier(s) sélectionné(s)
+                                </p>
+                            )}
+                            <button
+                                type="submit"
+                                style={{
+                                    ...styles.submitBtn,
+                                    opacity: carnetsUploading ? 0.7 : 1,
+                                }}
+                                disabled={carnetsUploading}
+                            >
+                                {carnetsUploading ? 'Upload en cours...' : '⬆️ Uploader les images'}
+                            </button>
+                        </form>
+                    </div>
+
+                    {/* Carnets list */}
+                    <div style={styles.card}>
+                        <div style={styles.cardHeader}>
+                            <h2 style={styles.cardTitle}>Vos carnets</h2>
+                            <span style={styles.count}>{carnets.length} carnet(s)</span>
+                        </div>
+
+                        {carnetsLoading ? (
+                            <p style={{ padding: '2rem', textAlign: 'center' }}>Chargement...</p>
+                        ) : carnets.length === 0 ? (
+                            <p style={{ padding: '2rem', textAlign: 'center', color: '#888' }}>
+                                Aucun carnet. Uploadez des images pour commencer.
+                            </p>
+                        ) : (
+                            <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                {carnets.map(carnet => (
+                                    <div
+                                        key={carnet.id}
+                                        style={{
+                                            border: '1px solid #ddd',
+                                            borderRadius: '8px',
+                                            overflow: 'hidden',
+                                        }}
+                                    >
+                                        {/* Carnet header */}
+                                        <div style={{
+                                            padding: '1rem',
+                                            background: '#f8f9fa',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                        }}>
+                                            {editingCarnetId === carnet.id ? (
+                                                <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
+                                                    <input
+                                                        type="text"
+                                                        value={editingCarnetTitle}
+                                                        onChange={(e) => setEditingCarnetTitle(e.target.value)}
+                                                        style={{ ...styles.input, flex: 1 }}
+                                                        autoFocus
+                                                    />
+                                                    <button
+                                                        onClick={() => handleUpdateCarnetTitle(carnet.id)}
+                                                        style={{
+                                                            padding: '0.5rem 1rem',
+                                                            background: '#28a745',
+                                                            color: '#fff',
+                                                            border: 'none',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                        }}
+                                                    >
+                                                        ✓
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setEditingCarnetId(null); setEditingCarnetTitle(''); }}
+                                                        style={{
+                                                            padding: '0.5rem 1rem',
+                                                            background: '#6c757d',
+                                                            color: '#fff',
+                                                            border: 'none',
+                                                            borderRadius: '4px',
+                                                            cursor: 'pointer',
+                                                        }}
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div>
+                                                        <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{carnet.title}</h3>
+                                                        <span style={{ color: '#888', fontSize: '0.8rem' }}>
+                                                            {carnet.pages.length} page(s)
+                                                        </span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                        <button
+                                                            onClick={() => { setEditingCarnetId(carnet.id); setEditingCarnetTitle(carnet.title); }}
+                                                            style={{
+                                                                padding: '0.4rem 0.75rem',
+                                                                background: '#007bff',
+                                                                color: '#fff',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                cursor: 'pointer',
+                                                                fontSize: '0.8rem',
+                                                            }}
+                                                        >
+                                                            ✏️ Renommer
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteCarnet(carnet.id)}
+                                                            style={{
+                                                                padding: '0.4rem 0.75rem',
+                                                                background: '#dc3545',
+                                                                color: '#fff',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                cursor: 'pointer',
+                                                                fontSize: '0.8rem',
+                                                            }}
+                                                        >
+                                                            🗑️ Supprimer
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                        {/* Pages thumbnails */}
+                                        <div style={{
+                                            display: 'flex',
+                                            flexWrap: 'wrap',
+                                            gap: '0.5rem',
+                                            padding: '1rem',
+                                        }}>
+                                            {carnet.pages.map(page => (
+                                                <div
+                                                    key={page.pageNumber}
+                                                    style={{
+                                                        position: 'relative',
+                                                        width: 80,
+                                                        height: 110,
+                                                    }}
+                                                >
+                                                    <img
+                                                        src={page.url.replace('/upload/', '/upload/f_auto,q_auto,w_150,c_fill/')}
+                                                        alt={`Page ${page.pageNumber}`}
+                                                        style={{
+                                                            width: '100%',
+                                                            height: '100%',
+                                                            objectFit: 'cover',
+                                                            borderRadius: '4px',
+                                                        }}
+                                                    />
+                                                    <span style={{
+                                                        position: 'absolute',
+                                                        bottom: 2,
+                                                        left: 2,
+                                                        background: 'rgba(0,0,0,0.7)',
+                                                        color: '#fff',
+                                                        fontSize: '0.65rem',
+                                                        padding: '2px 5px',
+                                                        borderRadius: '2px',
+                                                    }}>
+                                                        P.{page.pageNumber}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => handleDeleteCarnet(carnet.id, page.pageNumber)}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: 2,
+                                                            right: 2,
+                                                            width: 20,
+                                                            height: 20,
+                                                            borderRadius: '50%',
+                                                            border: 'none',
+                                                            background: '#dc3545',
+                                                            color: '#fff',
+                                                            fontSize: '0.75rem',
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                        }}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

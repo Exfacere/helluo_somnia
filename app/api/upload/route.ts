@@ -1,21 +1,13 @@
-import { v2 as cloudinary } from 'cloudinary';
 import { NextRequest, NextResponse } from 'next/server';
-
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import cloudinary from '@/app/lib/cloudinary';
+import { isAuthorized, unauthorized } from '@/app/lib/auth';
 
 export async function POST(request: NextRequest) {
-    try {
-        // Check admin password
-        const authHeader = request.headers.get('authorization');
-        if (authHeader !== `Bearer ${process.env.ADMIN_PASSWORD}`) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+    if (!isAuthorized(request)) {
+        return unauthorized();
+    }
 
+    try {
         const formData = await request.formData();
         const file = formData.get('file') as File;
 

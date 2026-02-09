@@ -1,16 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
+import { authSchema } from '@/app/lib/schemas';
 
 // POST - Verify admin password
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { password } = body;
+        const result = authSchema.safeParse(body);
 
-        if (!password) {
+        if (!result.success) {
             return NextResponse.json({ error: 'Password required' }, { status: 400 });
         }
 
-        const isValid = password === process.env.ADMIN_PASSWORD;
+        const { password } = result.data;
+        const expected = process.env.ADMIN_PASSWORD || '';
+
+        // Timing-safe comparison to prevent timing attacks
+        let isValid = false;
+        if (password.length === expected.length) {
+            try {
+                isValid = timingSafeEqual(
+                    Buffer.from(password),
+                    Buffer.from(expected)
+                );
+            } catch {
+                isValid = false;
+            }
+        }
 
         if (isValid) {
             return NextResponse.json({ success: true });

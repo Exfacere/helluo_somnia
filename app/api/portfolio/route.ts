@@ -1,32 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Redis } from '@upstash/redis';
-import { v2 as cloudinary } from 'cloudinary';
+import { redis, KEYS } from '@/app/lib/redis';
+import cloudinary from '@/app/lib/cloudinary';
+import { isAuthorized, unauthorized } from '@/app/lib/auth';
+import { portfolioItemSchema, portfolioPatchSchema } from '@/app/lib/schemas';
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Initialize Redis client
-const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
-
-const PORTFOLIO_KEY = 'portfolio:items';
-
-// Check authorization
-function isAuthorized(request: NextRequest): boolean {
-    const authHeader = request.headers.get('authorization');
-    return authHeader === `Bearer ${process.env.ADMIN_PASSWORD}`;
+interface PortfolioItem {
+    id: string;
+    title: string;
+    category: string;
+    file: string;
+    public_id?: string;
+    createdAt: string;
 }
 
 // GET - Retrieve all portfolio items
 export async function GET() {
     try {
-        const items = await redis.get<any[]>(PORTFOLIO_KEY) || [];
+        const items = await redis.get<PortfolioItem[]>(KEYS.PORTFOLIO) || [];
         return NextResponse.json({ items });
     } catch (error) {
         console.error('Error reading portfolio:', error);
@@ -37,21 +27,21 @@ export async function GET() {
 // POST - Add a new portfolio item
 export async function POST(request: NextRequest) {
     if (!isAuthorized(request)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return unauthorized();
     }
 
     try {
         const body = await request.json();
-        const { title, category, url, public_id } = body;
+        const result = portfolioItemSchema.safeParse(body);
 
-        if (!title || !category || !url) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        if (!result.success) {
+            return NextResponse.json({ error: result.error.flatten().fieldErrors }, { status: 400 });
         }
 
-        // Get existing items
-        const items = await redis.get<any[]>(PORTFOLIO_KEY) || [];
+        const { title, category, url, public_id } = result.data;
+        const items = await redis.get<PortfolioItem[]>(KEYS.PORTFOLIO) || [];
 
-        const newItem = {
+        const newItem: PortfolioItem = {
             id: Date.now().toString(),
             title,
             category,
@@ -60,11 +50,8 @@ export async function POST(request: NextRequest) {
             createdAt: new Date().toISOString(),
         };
 
-        // Add new item at the beginning
         items.unshift(newItem);
-
-        // Save back to Redis
-        await redis.set(PORTFOLIO_KEY, items);
+        await redis.set(KEYS.PORTFOLIO, items);
 
         return NextResponse.json({ success: true, item: newItem });
     } catch (error) {
@@ -76,7 +63,7 @@ export async function POST(request: NextRequest) {
 // DELETE - Remove a portfolio item
 export async function DELETE(request: NextRequest) {
     if (!isAuthorized(request)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return unauthorized();
     }
 
     try {
@@ -84,12 +71,10 @@ export async function DELETE(request: NextRequest) {
         const id = searchParams.get('id');
         const indexStr = searchParams.get('index');
 
-        // Get existing items
-        const items = await redis.get<any[]>(PORTFOLIO_KEY) || [];
-        let itemToDelete: any = null;
+        const items = await redis.get<PortfolioItem[]>(KEYS.PORTFOLIO) || [];
+        let itemToDelete: PortfolioItem | null = null;
 
         if (indexStr !== null) {
-            // Delete by index
             const index = parseInt(indexStr, 10);
             if (isNaN(index) || index < 0 || index >= items.length) {
                 return NextResponse.json({ error: 'Invalid index' }, { status: 400 });
@@ -97,8 +82,7 @@ export async function DELETE(request: NextRequest) {
             itemToDelete = items[index];
             items.splice(index, 1);
         } else if (id) {
-            // Delete by ID
-            const itemIndex = items.findIndex((item: any) => item.id === id);
+            const itemIndex = items.findIndex((item) => item.id === id);
             if (itemIndex === -1) {
                 return NextResponse.json({ error: 'Item not found' }, { status: 404 });
             }
@@ -112,16 +96,12 @@ export async function DELETE(request: NextRequest) {
         if (itemToDelete?.public_id) {
             try {
                 await cloudinary.uploader.destroy(itemToDelete.public_id);
-                console.log(`Deleted Cloudinary image: ${itemToDelete.public_id}`);
             } catch (cloudinaryError) {
                 console.error('Failed to delete Cloudinary image:', cloudinaryError);
-                // Continue with deletion even if Cloudinary fails
             }
         }
 
-        // Save back to Redis
-        await redis.set(PORTFOLIO_KEY, items);
-
+        await redis.set(KEYS.PORTFOLIO, items);
         return NextResponse.json({ success: true, deletedCloudinaryImage: !!itemToDelete?.public_id });
     } catch (error) {
         console.error('Error deleting item:', error);
@@ -129,36 +109,29 @@ export async function DELETE(request: NextRequest) {
     }
 }
 
-// PATCH - Update a portfolio item (title only for now)
+// PATCH - Update a portfolio item (title only)
 export async function PATCH(request: NextRequest) {
     if (!isAuthorized(request)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return unauthorized();
     }
 
     try {
         const body = await request.json();
-        const { index, title } = body;
+        const result = portfolioPatchSchema.safeParse(body);
 
-        if (index === undefined || index === null) {
-            return NextResponse.json({ error: 'Missing item index' }, { status: 400 });
+        if (!result.success) {
+            return NextResponse.json({ error: result.error.flatten().fieldErrors }, { status: 400 });
         }
 
-        if (!title || title.trim() === '') {
-            return NextResponse.json({ error: 'Title cannot be empty' }, { status: 400 });
-        }
-
-        // Get existing items
-        const items = await redis.get<any[]>(PORTFOLIO_KEY) || [];
+        const { index, title } = result.data;
+        const items = await redis.get<PortfolioItem[]>(KEYS.PORTFOLIO) || [];
 
         if (index < 0 || index >= items.length) {
             return NextResponse.json({ error: 'Invalid index' }, { status: 400 });
         }
 
-        // Update the title
         items[index].title = title.trim();
-
-        // Save back to Redis
-        await redis.set(PORTFOLIO_KEY, items);
+        await redis.set(KEYS.PORTFOLIO, items);
 
         return NextResponse.json({ success: true, item: items[index] });
     } catch (error) {
