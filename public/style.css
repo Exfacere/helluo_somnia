@@ -353,7 +353,7 @@ textarea:focus-visible {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.15;
+  opacity: 0.22;
   filter: grayscale(30%);
   will-change: transform;
   transform: translateZ(0);
@@ -437,61 +437,8 @@ textarea:focus-visible {
   }
 }
 
-/* ============================================
-   WORKS BANNER - Scrolling showcase
-   ============================================ */
-.works-banner {
-  overflow: hidden;
-  padding: var(--space-lg) 0;
-  background: var(--bg-alt);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-}
+/* Works banner: styles are in globals.css */
 
-.works-track {
-  display: flex;
-  gap: var(--space-md);
-  animation: bannerScroll 40s linear infinite;
-  width: max-content;
-}
-
-.works-banner:hover .works-track {
-  animation-play-state: paused;
-}
-
-.works-track img {
-  height: 180px;
-  width: auto;
-  border-radius: 8px;
-  object-fit: cover;
-  transition: transform var(--duration-normal) var(--ease-out-expo),
-    box-shadow var(--duration-normal);
-}
-
-.works-track img:hover {
-  transform: scale(1.05);
-  box-shadow: var(--shadow-lg);
-}
-
-@keyframes bannerScroll {
-  0% {
-    transform: translateX(0);
-  }
-
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-@media (max-width: 768px) {
-  .works-track img {
-    height: 120px;
-  }
-
-  .works-banner {
-    padding: var(--space-md) 0;
-  }
-}
 
 /* ============================================
    SECTIONS

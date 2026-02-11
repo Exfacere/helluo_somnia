@@ -11,11 +11,9 @@ interface Category {
 
 // Default categories
 const DEFAULT_CATEGORIES: Category[] = [
-    { id: 'pyro', name: 'Pyrogravures', order: 1 },
-    { id: 'peinture', name: 'Peintures', order: 2 },
-    { id: 'collage', name: 'Collages', order: 3 },
-    { id: 'gravure', name: 'Gravures', order: 4 },
-    { id: 'divers', name: 'Divers', order: 5 },
+    { id: 'pyro', name: 'Pyrogravure', order: 1 },
+    { id: 'peinture', name: 'Peinture', order: 2 },
+    { id: 'divers', name: 'Divers', order: 3 },
 ];
 
 // GET - Retrieve all categories
@@ -23,12 +21,32 @@ export async function GET() {
     try {
         let categories = await redis.get<Category[]>(KEYS.CATEGORIES);
 
+        // Sync with default categories: remove deleted ones, add missing ones
+        const defaultIds = new Set(DEFAULT_CATEGORIES.map(c => c.id));
         if (!categories || categories.length === 0) {
             categories = DEFAULT_CATEGORIES;
-            await redis.set(KEYS.CATEGORIES, categories);
+        } else {
+            // Remove categories that are no longer in defaults
+            categories = categories.filter(c => defaultIds.has(c.id));
+            // Add any new default categories not yet present
+            const existingIds = new Set(categories.map(c => c.id));
+            for (const def of DEFAULT_CATEGORIES) {
+                if (!existingIds.has(def.id)) {
+                    categories.push(def);
+                }
+            }
+            // Sync names and reorder
+            for (const cat of categories) {
+                const def = DEFAULT_CATEGORIES.find(d => d.id === cat.id);
+                if (def) {
+                    cat.name = def.name;
+                    cat.order = def.order;
+                }
+            }
         }
 
         categories.sort((a, b) => a.order - b.order);
+        await redis.set(KEYS.CATEGORIES, categories);
         return NextResponse.json({ categories });
     } catch (error) {
         console.error('Error reading categories:', error);

@@ -35,6 +35,11 @@ function getImageUrl(file: string, size: 'thumbnail' | 'full' = 'thumbnail'): st
 
 const ITEMS_PER_PAGE = 15;
 
+// Detect auto-generated titles from filenames (IMG_xxx, Snapchat_xxx, etc.)
+function isAutoTitle(title: string): boolean {
+    return /^(IMG|Snapchat|DSC|DCIM|Photo|Screenshot)/i.test(title.trim());
+}
+
 export default function PortfolioGallery() {
     const [items, setItems] = useState<PortfolioItem[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -181,12 +186,14 @@ export default function PortfolioGallery() {
                                 }}>
                                     {categoryNames[item.category] || item.category}
                                 </span>
-                                <h3 style={{
-                                    color: '#fff',
-                                    fontSize: '1rem',
-                                    fontWeight: 500,
-                                    marginTop: '0.25rem'
-                                }}>{item.title}</h3>
+                                {!isAutoTitle(item.title) && (
+                                    <h3 style={{
+                                        color: '#fff',
+                                        fontSize: '1rem',
+                                        fontWeight: 500,
+                                        marginTop: '0.25rem'
+                                    }}>{item.title}</h3>
+                                )}
                             </div>
                         </article>
                     ))

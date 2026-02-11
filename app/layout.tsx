@@ -4,8 +4,8 @@ import './globals.css';
 
 export const metadata: Metadata = {
     title: 'Helluo_Somnia — Artiste Contemporaine',
-    description: 'Portfolio de Helluo_Somnia, artiste contemporaine. Pyrogravures, peintures, collages et gravures.',
-    keywords: ['artiste contemporaine', 'pyrogravure', 'art contemporain', 'peinture', 'collage', 'gravure', 'Helluo_Somnia', 'portfolio art'],
+    description: 'Portfolio d\'Aurore Piesset (Helluo_Somnia), artiste contemporaine. Pyrogravures, peintures et carnets.',
+    keywords: ['artiste contemporaine', 'Aurore Piesset', 'pyrogravure', 'art contemporain', 'peinture', 'carnets', 'Helluo_Somnia', 'portfolio art'],
     authors: [{ name: 'Helluo_Somnia' }],
     robots: {
         index: true,
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     },
     openGraph: {
         title: 'Helluo_Somnia — Artiste Contemporaine',
-        description: 'Portfolio de Helluo_Somnia, artiste contemporaine. Pyrogravures, peintures, collages et gravures.',
+        description: 'Portfolio d\'Aurore Piesset (Helluo_Somnia), artiste contemporaine. Pyrogravures, peintures et carnets.',
         url: 'https://helluosomnia.com',
         siteName: 'Helluo_Somnia',
         images: [
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     twitter: {
         card: 'summary_large_image',
         title: 'Helluo_Somnia — Artiste Contemporaine',
-        description: 'Portfolio de Helluo_Somnia, artiste contemporaine. Pyrogravures, peintures, collages et gravures.',
+        description: 'Portfolio d\'Aurore Piesset (Helluo_Somnia), artiste contemporaine. Pyrogravures, peintures et carnets.',
         images: ['https://res.cloudinary.com/duxandnre/image/upload/f_auto,q_auto,w_1200/v1769433418/helluo-somnia/pyro3-hero.webp'],
     },
     metadataBase: new URL('https://helluosomnia.com'),

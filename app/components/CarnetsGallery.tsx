@@ -15,30 +15,31 @@ interface Carnet {
     coverUrl: string;
     pages: CarnetPage[];
     createdAt: string;
+    type?: 'cicatrise' | 'suture';
 }
 
 function getOptimizedUrl(url: string, size: 'thumbnail' | 'full' = 'thumbnail'): string {
     if (url.includes('res.cloudinary.com')) {
         const transformations = size === 'thumbnail'
             ? 'f_auto,q_auto,w_400,c_fill'
-            : 'f_auto,q_auto,w_800';
+            : 'f_auto,q_auto,w_1200';
         return url.replace('/upload/', `/upload/${transformations}/`);
     }
     return url;
 }
 
+type CarnetTab = 'cicatrise' | 'suture';
+
 export default function CarnetsGallery() {
     const [carnets, setCarnets] = useState<Carnet[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCarnet, setSelectedCarnet] = useState<Carnet | null>(null);
-    const [spreadIndex, setSpreadIndex] = useState(0);
-    const [isFlipping, setIsFlipping] = useState(false);
-    const [flipDirection, setFlipDirection] = useState<'next' | 'prev' | null>(null);
-    const [targetSpreadIndex, setTargetSpreadIndex] = useState(0);
-    const [fromSpreadIndex, setFromSpreadIndex] = useState(0);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [isTransitioning, setIsTransitioning] = useState(false);
+    const [slideDirection, setSlideDirection] = useState<'next' | 'prev' | null>(null);
+    const [activeTab, setActiveTab] = useState<CarnetTab>('cicatrise');
     const [isMobile, setIsMobile] = useState(false);
 
-    // Detect mobile on mount and resize
     useEffect(() => {
         function checkMobile() {
             setIsMobile(window.innerWidth < 768);
@@ -63,55 +64,45 @@ export default function CarnetsGallery() {
         setLoading(false);
     }
 
-    // For desktop: spreads (2 pages). For mobile: single pages
-    function getSpreads(carnet: Carnet): (CarnetPage | null)[][] {
-        const pages = carnet.pages;
-        if (isMobile) {
-            // Mobile: one page per "spread"
-            return pages.map(p => [null, p]);
-        }
-        // Desktop: book spread view
-        const spreads: (CarnetPage | null)[][] = [];
-        if (pages.length > 0) spreads.push([null, pages[0]]);
-        for (let i = 1; i < pages.length; i += 2) {
-            spreads.push([pages[i] || null, pages[i + 1] || null]);
-        }
-        return spreads;
-    }
+    // Filter carnets by tab
+    const filteredCarnets = carnets.filter(c => {
+        const type = c.type || 'cicatrise';
+        return type === activeTab;
+    });
 
-    function flipToSpread(targetIndex: number) {
-        if (!selectedCarnet || isFlipping) return;
-        const spreads = getSpreads(selectedCarnet);
-        if (targetIndex < 0 || targetIndex >= spreads.length || targetIndex === spreadIndex) return;
+    // Has any carnets of each type
+    const hasCicatrise = carnets.some(c => (c.type || 'cicatrise') === 'cicatrise');
+    const hasSuture = carnets.some(c => c.type === 'suture');
 
-        const direction = targetIndex > spreadIndex ? 'next' : 'prev';
-        setFlipDirection(direction);
-        setTargetSpreadIndex(targetIndex);
-        setFromSpreadIndex(spreadIndex);
-        setIsFlipping(true);
+    function goToPage(targetPage: number) {
+        if (!selectedCarnet || isTransitioning) return;
+        const totalPages = selectedCarnet.pages.length;
+        if (targetPage < 0 || targetPage >= totalPages || targetPage === currentPage) return;
+
+        const direction = targetPage > currentPage ? 'next' : 'prev';
+        setSlideDirection(direction);
+        setIsTransitioning(true);
 
         setTimeout(() => {
-            setSpreadIndex(targetIndex);
-        }, 280);
-        setTimeout(() => {
-            setIsFlipping(false);
-            setFlipDirection(null);
-        }, 550);
+            setCurrentPage(targetPage);
+            setSlideDirection(null);
+            setIsTransitioning(false);
+        }, 400);
     }
 
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
-        if (!selectedCarnet || isFlipping) return;
-        const spreads = getSpreads(selectedCarnet);
+        if (!selectedCarnet || isTransitioning) return;
+        const totalPages = selectedCarnet.pages.length;
         if (e.key === 'ArrowRight' || e.key === ' ') {
             e.preventDefault();
-            if (spreadIndex < spreads.length - 1) flipToSpread(spreadIndex + 1);
+            if (currentPage < totalPages - 1) goToPage(currentPage + 1);
         } else if (e.key === 'ArrowLeft') {
             e.preventDefault();
-            if (spreadIndex > 0) flipToSpread(spreadIndex - 1);
+            if (currentPage > 0) goToPage(currentPage - 1);
         } else if (e.key === 'Escape') {
             closeModal();
         }
-    }, [selectedCarnet, isFlipping, spreadIndex, isMobile]);
+    }, [selectedCarnet, isTransitioning, currentPage]);
 
     useEffect(() => {
         if (selectedCarnet) {
@@ -126,21 +117,19 @@ export default function CarnetsGallery() {
 
     function openCarnet(carnet: Carnet) {
         setSelectedCarnet(carnet);
-        setSpreadIndex(0);
-        setTargetSpreadIndex(0);
-        setFromSpreadIndex(0);
-        setIsFlipping(false);
-        setFlipDirection(null);
+        setCurrentPage(0);
+        setIsTransitioning(false);
+        setSlideDirection(null);
     }
 
     function closeModal() {
         setSelectedCarnet(null);
-        setSpreadIndex(0);
-        setIsFlipping(false);
-        setFlipDirection(null);
+        setCurrentPage(0);
+        setIsTransitioning(false);
+        setSlideDirection(null);
     }
 
-    // Touch swipe support
+    // Touch swipe
     const [touchStart, setTouchStart] = useState<number | null>(null);
 
     function handleTouchStart(e: React.TouchEvent) {
@@ -148,16 +137,16 @@ export default function CarnetsGallery() {
     }
 
     function handleTouchEnd(e: React.TouchEvent) {
-        if (!touchStart || !selectedCarnet || isFlipping) return;
+        if (!touchStart || !selectedCarnet || isTransitioning) return;
         const touchEnd = e.changedTouches[0].clientX;
         const diff = touchStart - touchEnd;
-        const spreads = getSpreads(selectedCarnet);
+        const totalPages = selectedCarnet.pages.length;
 
         if (Math.abs(diff) > 50) {
-            if (diff > 0 && spreadIndex < spreads.length - 1) {
-                flipToSpread(spreadIndex + 1);
-            } else if (diff < 0 && spreadIndex > 0) {
-                flipToSpread(spreadIndex - 1);
+            if (diff > 0 && currentPage < totalPages - 1) {
+                goToPage(currentPage + 1);
+            } else if (diff < 0 && currentPage > 0) {
+                goToPage(currentPage - 1);
             }
         }
         setTouchStart(null);
@@ -167,7 +156,7 @@ export default function CarnetsGallery() {
         return (
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                 {[1, 2, 3].map(i => (
-                    <div key={i} style={{ width: 160, height: 220, background: '#2a2a2a', borderRadius: 8, animation: 'pulse 1.5s infinite' }} />
+                    <div key={i} style={{ width: 160, height: 220, background: '#e8e6e2', borderRadius: 8, animation: 'pulse 1.5s infinite' }} />
                 ))}
             </div>
         );
@@ -177,50 +166,25 @@ export default function CarnetsGallery() {
         return <p style={{ textAlign: 'center', color: '#888', fontStyle: 'italic' }}>Aucun carnet pour le moment</p>;
     }
 
-    const currentSpreads = selectedCarnet ? getSpreads(selectedCarnet) : [];
-    const displaySpread = currentSpreads[spreadIndex] || [null, null];
-    const targetSpread = currentSpreads[targetSpreadIndex] || [null, null];
-    const fromSpread = currentSpreads[fromSpreadIndex] || [null, null];
-    const canGoBack = spreadIndex > 0 || (isFlipping && fromSpreadIndex > 0);
-    const canGoForward = spreadIndex < currentSpreads.length - 1 || (isFlipping && fromSpreadIndex < currentSpreads.length - 1);
+    const totalPages = selectedCarnet ? selectedCarnet.pages.length : 0;
+    const canGoPrev = currentPage > 0;
+    const canGoNext = currentPage < totalPages - 1;
 
-    // Responsive dimensions
-    const pageWidth = isMobile ? 'min(85vw, 350px)' : 'min(35vw, 350px)';
-    const pageHeight = isMobile ? 'min(115vw, 470px)' : 'min(47vw, 470px)';
-
-    const renderPage = (page: CarnetPage | null, side: 'left' | 'right', showEnd = false) => {
-        if (page) {
-            return (
-                <>
-                    <img src={getOptimizedUrl(page.url, 'full')} alt={`Page ${page.pageNumber}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <span style={{ position: 'absolute', bottom: 10, [side === 'left' ? 'left' : 'right']: 10, color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', fontStyle: 'italic' }}>
-                        {page.pageNumber}
-                    </span>
-                </>
-            );
-        }
-        return (
-            <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #1a1714 0%, #252220 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444', fontStyle: 'italic', fontSize: '0.875rem' }}>
-                {showEnd ? 'Fin du carnet' : ''}
-            </div>
-        );
-    };
+    // Responsive page dimensions
+    const pageMaxWidth = isMobile ? '92vw' : 'min(70vw, 800px)';
+    const pageMaxHeight = isMobile ? '70vh' : '80vh';
 
     return (
         <>
             <style>{`
-                @keyframes flipNext {
-                    0% { transform: perspective(1500px) rotateY(0deg); }
-                    100% { transform: perspective(1500px) rotateY(-180deg); }
+                @keyframes slideInRight {
+                    0% { transform: translateX(100%); opacity: 0; }
+                    100% { transform: translateX(0); opacity: 1; }
                 }
-                @keyframes flipPrev {
-                    0% { transform: perspective(1500px) rotateY(0deg); }
-                    100% { transform: perspective(1500px) rotateY(180deg); }
+                @keyframes slideInLeft {
+                    0% { transform: translateX(-100%); opacity: 0; }
+                    100% { transform: translateX(0); opacity: 1; }
                 }
-                .flip-next { animation: flipNext 0.55s ease-in-out forwards; transform-origin: left center; }
-                .flip-prev { animation: flipPrev 0.55s ease-in-out forwards; transform-origin: right center; }
-                
-                /* Mobile slide animations */
                 @keyframes slideOutLeft {
                     0% { transform: translateX(0); opacity: 1; }
                     100% { transform: translateX(-100%); opacity: 0; }
@@ -229,21 +193,60 @@ export default function CarnetsGallery() {
                     0% { transform: translateX(0); opacity: 1; }
                     100% { transform: translateX(100%); opacity: 0; }
                 }
-                @keyframes slideInLeft {
-                    0% { transform: translateX(100%); opacity: 0; }
-                    100% { transform: translateX(0); opacity: 1; }
+                .page-slide-in-right { animation: slideInRight 0.4s ease-out forwards; }
+                .page-slide-in-left { animation: slideInLeft 0.4s ease-out forwards; }
+                .page-slide-out-left { animation: slideOutLeft 0.4s ease-out forwards; }
+                .page-slide-out-right { animation: slideOutRight 0.4s ease-out forwards; }
+                @keyframes pulse {
+                    0%, 100% { opacity: 0.6; }
+                    50% { opacity: 1; }
                 }
-                @keyframes slideInRight {
-                    0% { transform: translateX(-100%); opacity: 0; }
-                    100% { transform: translateX(0); opacity: 1; }
-                }
-                .slide-out-left { animation: slideOutLeft 0.4s ease-out forwards; }
-                .slide-out-right { animation: slideOutRight 0.4s ease-out forwards; }
-                .slide-in-left { animation: slideInLeft 0.4s ease-out forwards; }
-                .slide-in-right { animation: slideInRight 0.4s ease-out forwards; }
             `}</style>
 
-            {/* Carnets Grid - Responsive */}
+            {/* Tab Toggle: Cicatrisés / Suturés */}
+            {(hasCicatrise || hasSuture) && (
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    marginBottom: '2rem',
+                }}>
+                    <button
+                        onClick={() => setActiveTab('cicatrise')}
+                        style={{
+                            padding: '0.6rem 1.5rem',
+                            borderRadius: '999px',
+                            border: activeTab === 'cicatrise' ? '1px solid #C9A962' : '1px solid rgba(0,0,0,0.12)',
+                            background: activeTab === 'cicatrise' ? 'rgba(201,169,98,0.12)' : 'transparent',
+                            color: activeTab === 'cicatrise' ? '#1A1A1A' : '#8A8A8A',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                            transition: 'all 0.3s ease',
+                        }}
+                    >
+                        Carnets cicatrisés
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('suture')}
+                        style={{
+                            padding: '0.6rem 1.5rem',
+                            borderRadius: '999px',
+                            border: activeTab === 'suture' ? '1px solid #C9A962' : '1px solid rgba(0,0,0,0.12)',
+                            background: activeTab === 'suture' ? 'rgba(201,169,98,0.12)' : 'transparent',
+                            color: activeTab === 'suture' ? '#1A1A1A' : '#8A8A8A',
+                            cursor: 'pointer',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                            transition: 'all 0.3s ease',
+                        }}
+                    >
+                        Carnets suturés
+                    </button>
+                </div>
+            )}
+
+            {/* Carnets Grid */}
             <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
@@ -251,24 +254,30 @@ export default function CarnetsGallery() {
                 justifyItems: 'center',
                 padding: '0 0.5rem',
             }}>
-                {carnets.map(carnet => (
-                    <article key={carnet.id} onClick={() => openCarnet(carnet)}
-                        style={{ cursor: 'pointer', position: 'relative', width: '100%', maxWidth: 180, transition: 'transform 0.3s ease' }}
-                        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-8px)'}
-                        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
-                        <div style={{ position: 'relative', aspectRatio: '3/4', borderRadius: '4px 10px 10px 4px', overflow: 'hidden', boxShadow: '3px 3px 12px rgba(0,0,0,0.4)', background: '#1a1a1a' }}>
-                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 10, background: 'linear-gradient(90deg, rgba(0,0,0,0.4), transparent)', zIndex: 2 }} />
-                            <img src={getOptimizedUrl(carnet.coverUrl)} alt={carnet.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            <div style={{ position: 'absolute', bottom: 6, right: 6, background: 'rgba(0,0,0,0.8)', color: '#C9A962', padding: '3px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 500 }}>
-                                {carnet.pages.length} pages
+                {filteredCarnets.length === 0 ? (
+                    <p style={{ textAlign: 'center', color: '#888', fontStyle: 'italic', gridColumn: '1 / -1' }}>
+                        Aucun carnet dans cette catégorie
+                    </p>
+                ) : (
+                    filteredCarnets.map(carnet => (
+                        <article key={carnet.id} onClick={() => openCarnet(carnet)}
+                            style={{ cursor: 'pointer', position: 'relative', width: '100%', maxWidth: 180, transition: 'transform 0.3s ease' }}
+                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-8px)'}
+                            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                            <div style={{ position: 'relative', aspectRatio: '3/4', borderRadius: '4px 10px 10px 4px', overflow: 'hidden', boxShadow: '3px 3px 12px rgba(0,0,0,0.15)', background: '#f0ede8' }}>
+                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 10, background: 'linear-gradient(90deg, rgba(0,0,0,0.15), transparent)', zIndex: 2 }} />
+                                <img src={getOptimizedUrl(carnet.coverUrl)} alt={carnet.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <div style={{ position: 'absolute', bottom: 6, right: 6, background: 'rgba(0,0,0,0.7)', color: '#C9A962', padding: '3px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 500 }}>
+                                    {carnet.pages.length} pages
+                                </div>
                             </div>
-                        </div>
-                        <h3 style={{ marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 500, textAlign: 'center', color: '#fff' }}>{carnet.title}</h3>
-                    </article>
-                ))}
+                            <h3 style={{ marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 500, textAlign: 'center', color: '#1A1A1A' }}>{carnet.title}</h3>
+                        </article>
+                    ))
+                )}
             </div>
 
-            {/* Book Modal */}
+            {/* Single-Page Viewer Modal */}
             {selectedCarnet && (
                 <div
                     onClick={closeModal}
@@ -277,7 +286,7 @@ export default function CarnetsGallery() {
                     style={{
                         position: 'fixed',
                         inset: 0,
-                        background: 'rgba(15, 12, 10, 0.98)',
+                        background: 'rgba(15, 12, 10, 0.97)',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
@@ -312,117 +321,82 @@ export default function CarnetsGallery() {
                         color: '#C9A962',
                         fontFamily: 'Cormorant Garamond, serif',
                         fontSize: isMobile ? '1.1rem' : 'clamp(1.25rem, 3vw, 1.75rem)',
-                        marginBottom: isMobile ? '0.75rem' : '1rem',
+                        marginBottom: isMobile ? '0.5rem' : '1rem',
                         textAlign: 'center',
                         letterSpacing: '0.05em',
                         padding: '0 2rem',
                     }}>{selectedCarnet.title}</h2>
 
-                    {/* Book */}
-                    <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', position: 'relative', perspective: '1500px' }}>
-
-                        {/* Nav Left - Hidden on mobile (use swipe) */}
+                    {/* Page Viewer */}
+                    <div onClick={(e) => e.stopPropagation()} style={{
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: isMobile ? '0.5rem' : '1rem',
+                    }}>
+                        {/* Prev Button */}
                         {!isMobile && (
-                            <button onClick={() => flipToSpread(spreadIndex - 1)} disabled={!canGoBack || isFlipping}
-                                style={{ position: 'absolute', left: '-55px', top: '50%', transform: 'translateY(-50%)', background: canGoBack && !isFlipping ? 'rgba(201, 169, 98, 0.15)' : 'transparent', border: canGoBack && !isFlipping ? '1px solid rgba(201, 169, 98, 0.4)' : '1px solid rgba(255,255,255,0.1)', color: canGoBack && !isFlipping ? '#C9A962' : '#333', width: 44, height: 44, borderRadius: '50%', fontSize: '1.25rem', cursor: canGoBack && !isFlipping ? 'pointer' : 'not-allowed', zIndex: 10 }}>←</button>
+                            <button onClick={() => goToPage(currentPage - 1)} disabled={!canGoPrev || isTransitioning}
+                                style={{
+                                    background: canGoPrev && !isTransitioning ? 'rgba(201, 169, 98, 0.15)' : 'transparent',
+                                    border: canGoPrev && !isTransitioning ? '1px solid rgba(201, 169, 98, 0.4)' : '1px solid rgba(255,255,255,0.1)',
+                                    color: canGoPrev && !isTransitioning ? '#C9A962' : '#333',
+                                    width: 44, height: 44, borderRadius: '50%',
+                                    fontSize: '1.25rem',
+                                    cursor: canGoPrev && !isTransitioning ? 'pointer' : 'not-allowed',
+                                    flexShrink: 0,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}>←</button>
                         )}
 
-                        {/* Mobile: Single page view with slide animation */}
-                        {isMobile ? (
-                            <div style={{ width: pageWidth, height: pageHeight, position: 'relative', overflow: 'hidden' }}>
-                                {/* Current/Target page (slides in) */}
-                                <div
-                                    className={isFlipping ? (flipDirection === 'next' ? 'slide-in-left' : 'slide-in-right') : ''}
+                        {/* Single Page Display */}
+                        <div style={{
+                            width: pageMaxWidth,
+                            maxHeight: pageMaxHeight,
+                            position: 'relative',
+                            overflow: 'hidden',
+                            borderRadius: '8px',
+                            background: '#1a1714',
+                            boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}>
+                            {selectedCarnet.pages[currentPage] && (
+                                <img
+                                    key={currentPage}
+                                    className={slideDirection === 'next' ? 'page-slide-in-right' : slideDirection === 'prev' ? 'page-slide-in-left' : ''}
+                                    src={getOptimizedUrl(selectedCarnet.pages[currentPage].url, 'full')}
+                                    alt={`Page ${selectedCarnet.pages[currentPage].pageNumber}`}
                                     style={{
-                                        width: '100%',
-                                        height: '100%',
-                                        background: '#1a1714',
-                                        borderRadius: '8px',
-                                        overflow: 'hidden',
-                                        boxShadow: '0 4px 25px rgba(0,0,0,0.5)',
-                                        position: 'absolute',
+                                        maxWidth: '100%',
+                                        maxHeight: pageMaxHeight,
+                                        objectFit: 'contain',
+                                        display: 'block',
                                     }}
-                                >
-                                    {renderPage(displaySpread[1], 'right', !displaySpread[1])}
-                                </div>
+                                />
+                            )}
+                        </div>
 
-                                {/* Outgoing page (slides out) */}
-                                {isFlipping && (
-                                    <div
-                                        className={flipDirection === 'next' ? 'slide-out-left' : 'slide-out-right'}
-                                        style={{
-                                            width: '100%',
-                                            height: '100%',
-                                            position: 'absolute',
-                                            zIndex: 10,
-                                            background: '#1a1714',
-                                            borderRadius: '8px',
-                                            overflow: 'hidden',
-                                            boxShadow: '0 4px 25px rgba(0,0,0,0.5)',
-                                        }}
-                                    >
-                                        {renderPage(fromSpread[1], 'right')}
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            /* Desktop: Book spread view */
-                            <>
-                                {/* Left Page Area */}
-                                <div style={{ width: pageWidth, height: pageHeight, position: 'relative', transformStyle: 'preserve-3d' }}>
-                                    <div style={{ width: '100%', height: '100%', background: '#1a1714', borderRadius: '8px 0 0 8px', overflow: 'hidden', boxShadow: '-4px 4px 20px rgba(0,0,0,0.5)', position: 'absolute' }}>
-                                        {isFlipping && flipDirection === 'prev'
-                                            ? renderPage(targetSpread[0], 'left')
-                                            : renderPage(displaySpread[0], 'left')}
-                                        <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 30, background: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.25))', pointerEvents: 'none' }} />
-                                    </div>
-                                    {isFlipping && flipDirection === 'prev' && (
-                                        <div className="flip-prev" style={{ width: '100%', height: '100%', position: 'absolute', transformStyle: 'preserve-3d', zIndex: 10 }}>
-                                            <div style={{ width: '100%', height: '100%', position: 'absolute', backfaceVisibility: 'hidden', background: '#1a1714', borderRadius: '8px 0 0 8px', overflow: 'hidden', boxShadow: '-2px 0 15px rgba(0,0,0,0.3)' }}>
-                                                {renderPage(fromSpread[0], 'left')}
-                                            </div>
-                                            <div style={{ width: '100%', height: '100%', position: 'absolute', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', background: '#1a1714', borderRadius: '0 8px 8px 0', overflow: 'hidden' }}>
-                                                {renderPage(fromSpread[1], 'right')}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Spine */}
-                                <div style={{ width: 6, background: 'linear-gradient(90deg, #15120f, #252220, #15120f)', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.6)', zIndex: 5 }} />
-
-                                {/* Right Page Area */}
-                                <div style={{ width: pageWidth, height: pageHeight, position: 'relative', transformStyle: 'preserve-3d' }}>
-                                    <div style={{ width: '100%', height: '100%', background: '#1a1714', borderRadius: '0 8px 8px 0', overflow: 'hidden', boxShadow: '4px 4px 20px rgba(0,0,0,0.5)', position: 'absolute' }}>
-                                        {isFlipping && flipDirection === 'next'
-                                            ? renderPage(targetSpread[1], 'right', !targetSpread[1])
-                                            : renderPage(displaySpread[1], 'right', !displaySpread[1])}
-                                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 30, background: 'linear-gradient(-90deg, transparent, rgba(0,0,0,0.25))', pointerEvents: 'none' }} />
-                                    </div>
-                                    {isFlipping && flipDirection === 'next' && (
-                                        <div className="flip-next" style={{ width: '100%', height: '100%', position: 'absolute', transformStyle: 'preserve-3d', zIndex: 10 }}>
-                                            <div style={{ width: '100%', height: '100%', position: 'absolute', backfaceVisibility: 'hidden', background: '#1a1714', borderRadius: '0 8px 8px 0', overflow: 'hidden', boxShadow: '2px 0 15px rgba(0,0,0,0.3)' }}>
-                                                {renderPage(fromSpread[1], 'right')}
-                                            </div>
-                                            <div style={{ width: '100%', height: '100%', position: 'absolute', backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', background: '#1a1714', borderRadius: '8px 0 0 8px', overflow: 'hidden' }}>
-                                                {renderPage(targetSpread[0], 'left')}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </>
-                        )}
-
-                        {/* Nav Right - Hidden on mobile */}
+                        {/* Next Button */}
                         {!isMobile && (
-                            <button onClick={() => flipToSpread(spreadIndex + 1)} disabled={!canGoForward || isFlipping}
-                                style={{ position: 'absolute', right: '-55px', top: '50%', transform: 'translateY(-50%)', background: canGoForward && !isFlipping ? 'rgba(201, 169, 98, 0.15)' : 'transparent', border: canGoForward && !isFlipping ? '1px solid rgba(201, 169, 98, 0.4)' : '1px solid rgba(255,255,255,0.1)', color: canGoForward && !isFlipping ? '#C9A962' : '#333', width: 44, height: 44, borderRadius: '50%', fontSize: '1.25rem', cursor: canGoForward && !isFlipping ? 'pointer' : 'not-allowed', zIndex: 10 }}>→</button>
+                            <button onClick={() => goToPage(currentPage + 1)} disabled={!canGoNext || isTransitioning}
+                                style={{
+                                    background: canGoNext && !isTransitioning ? 'rgba(201, 169, 98, 0.15)' : 'transparent',
+                                    border: canGoNext && !isTransitioning ? '1px solid rgba(201, 169, 98, 0.4)' : '1px solid rgba(255,255,255,0.1)',
+                                    color: canGoNext && !isTransitioning ? '#C9A962' : '#333',
+                                    width: 44, height: 44, borderRadius: '50%',
+                                    fontSize: '1.25rem',
+                                    cursor: canGoNext && !isTransitioning ? 'pointer' : 'not-allowed',
+                                    flexShrink: 0,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}>→</button>
                         )}
                     </div>
 
-                    {/* Indicator */}
-                    <div style={{ marginTop: isMobile ? '1rem' : '1.25rem', color: '#666', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span>{isMobile ? `${spreadIndex + 1}` : `${spreadIndex + 1}`} / {currentSpreads.length}</span>
+                    {/* Page Indicator */}
+                    <div style={{ marginTop: isMobile ? '0.75rem' : '1rem', color: '#666', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <span>{currentPage + 1} / {totalPages}</span>
                         {!isMobile && (
                             <>
                                 <span style={{ color: '#444' }}>•</span>
@@ -434,7 +408,7 @@ export default function CarnetsGallery() {
                         )}
                     </div>
 
-                    {/* Thumbnails - Smaller on mobile */}
+                    {/* Thumbnails Strip */}
                     <div style={{
                         display: 'flex',
                         gap: isMobile ? '0.3rem' : '0.4rem',
@@ -444,33 +418,26 @@ export default function CarnetsGallery() {
                         padding: '0.5rem',
                         WebkitOverflowScrolling: 'touch',
                     }}>
-                        {currentSpreads.map((spread, idx) => (
-                            <button key={idx} onClick={(e) => { e.stopPropagation(); flipToSpread(idx); }} disabled={isFlipping}
+                        {selectedCarnet.pages.map((page, idx) => (
+                            <button key={idx} onClick={(e) => { e.stopPropagation(); goToPage(idx); }} disabled={isTransitioning}
                                 style={{
-                                    display: 'flex',
-                                    gap: isMobile ? 0 : 1,
                                     padding: 2,
-                                    background: idx === spreadIndex ? 'rgba(201, 169, 98, 0.25)' : 'rgba(255,255,255,0.03)',
-                                    border: idx === spreadIndex ? '2px solid #C9A962' : '2px solid transparent',
+                                    background: idx === currentPage ? 'rgba(201, 169, 98, 0.25)' : 'rgba(255,255,255,0.03)',
+                                    border: idx === currentPage ? '2px solid #C9A962' : '2px solid transparent',
                                     borderRadius: 3,
-                                    cursor: isFlipping ? 'wait' : 'pointer',
-                                    opacity: idx === spreadIndex ? 1 : 0.5,
+                                    cursor: isTransitioning ? 'wait' : 'pointer',
+                                    opacity: idx === currentPage ? 1 : 0.5,
                                     transition: 'all 0.2s ease',
                                     flexShrink: 0
                                 }}>
-                                {!isMobile && (
-                                    <div style={{ width: 18, height: 25, background: spread[0] ? 'transparent' : '#252220', borderRadius: '2px 0 0 2px', overflow: 'hidden' }}>
-                                        {spread[0] && <img src={getOptimizedUrl(spread[0].url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                                    </div>
-                                )}
                                 <div style={{
-                                    width: isMobile ? 16 : 18,
-                                    height: isMobile ? 22 : 25,
-                                    background: spread[1] ? 'transparent' : '#252220',
-                                    borderRadius: isMobile ? '2px' : '0 2px 2px 0',
-                                    overflow: 'hidden'
+                                    width: isMobile ? 24 : 30,
+                                    height: isMobile ? 16 : 20,
+                                    borderRadius: '2px',
+                                    overflow: 'hidden',
+                                    background: '#252220',
                                 }}>
-                                    {spread[1] && <img src={getOptimizedUrl(spread[1].url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                                    <img src={getOptimizedUrl(page.url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 </div>
                             </button>
                         ))}

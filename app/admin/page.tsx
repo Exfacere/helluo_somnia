@@ -36,13 +36,12 @@ interface Carnet {
     coverUrl: string;
     pages: CarnetPage[];
     createdAt: string;
+    type?: 'cicatrise' | 'suture';
 }
 
 const categoryNames: Record<string, string> = {
     pyro: 'Pyrogravure',
     peinture: 'Peinture',
-    collage: 'Collage',
-    gravure: 'Gravure',
     divers: 'Divers',
 };
 
@@ -704,16 +703,16 @@ export default function AdminPage() {
 
                         {/* Filters */}
                         <div style={styles.filters}>
-                            {['all', 'pyro', 'peinture', 'collage', 'gravure', 'divers'].map(f => (
+                            {[{ id: 'all', name: 'Toutes' }, ...categories].map(f => (
                                 <button
-                                    key={f}
-                                    onClick={() => setFilter(f)}
+                                    key={f.id}
+                                    onClick={() => setFilter(f.id)}
                                     style={{
                                         ...styles.filterBtn,
-                                        ...(filter === f ? styles.filterActive : {}),
+                                        ...(filter === f.id ? styles.filterActive : {}),
                                     }}
                                 >
-                                    {f === 'all' ? 'Toutes' : categoryNames[f]}
+                                    {f.name}
                                 </button>
                             ))}
                         </div>
@@ -862,11 +861,9 @@ export default function AdminPage() {
                                             style={styles.input}
                                         >
                                             <option value="">Choisir...</option>
-                                            <option value="pyro">Pyrogravure</option>
-                                            <option value="peinture">Peinture</option>
-                                            <option value="collage">Collage</option>
-                                            <option value="gravure">Gravure</option>
-                                            <option value="divers">Divers</option>
+                                            {categories.map(cat => (
+                                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                            ))}
                                         </select>
                                     </div>
 

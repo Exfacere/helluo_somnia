@@ -57,6 +57,7 @@ export default function HomePage() {
                     </div>
                     <div className="hero-content">
                         <h1 className="hero-title">Helluo_Somnia</h1>
+                        <p className="hero-artist-name">Aurore Piesset</p>
                         <p className="hero-subtitle">— Artiste Contemporaine —</p>
                     </div>
                     <div className="hero-scroll">
@@ -64,11 +65,40 @@ export default function HomePage() {
                     </div>
                 </header>
 
+                {/* Works Banner - Scrolling showcase */}
+                <section className="works-banner">
+                    <div className="works-track">
+                        {[
+                            'https://res.cloudinary.com/duxandnre/image/upload/f_auto,q_auto,w_400/v1769433418/helluo-somnia/pyro3-hero.webp',
+                            '/Images/Pyro1.webp',
+                            '/Images/Pyro2.webp',
+                            '/Images/Pyro3.webp',
+                            '/Images/Peinture.webp',
+                            '/Images/Peinture2.webp',
+                            '/Images/Peinture3.webp',
+                            '/Images/Gravure1.webp',
+                            '/Images/Gravure2.webp',
+                            '/Images/Gravure3.webp',
+                        ].flatMap((src, i) => [
+                            <img key={`a-${i}`} src={src} alt="Œuvre" loading="lazy" />,
+                            <img key={`b-${i}`} src={src} alt="Œuvre" loading="lazy" />,
+                        ])}
+                    </div>
+                </section>
+
                 {/* About Section */}
                 <section id="about" className="about section-alt">
                     <div className="container">
-                        <div className="about-image">
-                            <img src="https://res.cloudinary.com/duxandnre/image/upload/v1769433419/helluo-somnia/about-profile.webp" alt="Portrait de Helluo_Somnia" width={600} height={800} />
+                        <div className="about-visual">
+                            <div className="about-profile-bubble">
+                                <img src="/Images/ProfilePic.webp" alt="Portrait de Helluo_Somnia" width={120} height={120} />
+                            </div>
+                            <div className="about-image">
+                                <img src="https://res.cloudinary.com/duxandnre/image/upload/v1769433419/helluo-somnia/about-profile.webp" alt="Helluo_Somnia en atelier" width={600} height={800} />
+                                <span className="about-photo-credit">
+                                    Photo : <a href="#" target="_blank" rel="noopener noreferrer">Célia Naso</a>
+                                </span>
+                            </div>
                         </div>
                         <div className="about-content">
                             <h2 className="section-title">À propos</h2>
@@ -120,6 +150,13 @@ export default function HomePage() {
 
                 {/* Contact Section */}
                 <section id="contact" className="contact">
+                    <div className="contact-bg">
+                        <img
+                            src="/Images/Pyro2.webp"
+                            alt=""
+                            aria-hidden="true"
+                        />
+                    </div>
                     <div className="container">
                         <h2 className="section-title">Contact</h2>
                         <p>
@@ -161,7 +198,7 @@ export default function HomePage() {
             {/* Footer */}
             <footer className="footer">
                 <div className="container">
-                    <p>© 2025 Helluo_Somnia — Tous droits réservés</p>
+                    <p>© 2026 Aurore Piesset — Helluo_Somnia — Tous droits réservés</p>
                 </div>
             </footer>
         </>
